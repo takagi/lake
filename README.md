@@ -1,4 +1,4 @@
-# Clake - Clake is a Make-like program implemented in Common Lisp.
+# Clake - Clake is a Rake-like program implemented in Common Lisp.
 [![Build Status](https://circleci.com/gh/Rudolph-Miller/clake.svg?style=shield)](https://circleci.com/gh/Rudolph-Miller/clake)
 
 ## API

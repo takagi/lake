@@ -26,7 +26,7 @@
                 :components
                 ((:file "clake")
                  (:file "core"))))
-  :description "Clake is a Make-like program implemented in Common Lisp."
+  :description "Clake is a Rake-like program implemented in Common Lisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.md"
