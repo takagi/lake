@@ -39,4 +39,5 @@
                                :fill-pointer t)))
           (setf (fill-pointer seq) (read-sequence seq stream))
           seq)))
-  :in-order-to ((test-op (test-op clake-test))))
+  :perform (test-op (op c)
+                    (uiop:symbol-call :cl-annot-prove :run-system-tests c)))
