@@ -54,6 +54,7 @@ Here shows what and how CLAKEFILE should express.
 - dynamic task definition
 - expected number of tasks in a CLAKEFILE is ~100
 - up-to-date check
+- duplicated target names allowed, executed respectively
 
 ## Author
 
