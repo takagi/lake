@@ -41,6 +41,15 @@ Here shows what and how CLAKEFILE should express.
     (clake:deftarget "clean" () :phony t
       (sh "rm -f hello hello.o message.o"))
 
+    ;; The "all" target.
+    (clake:deftarget "all" ("hello" "som"))
+    
+    (clake:deftarget "hello" ("hello.c")
+      (sh #?"#{cc} -o hello hello.c"))
+
+    (clake:deftarget "som" ("som.c")
+      (sh #?"#{cc} -o som som.c"))
+
 ## Design requirements
 - dynamic task definition
 - expected number of tasks in a CLAKEFILE is ~100
