@@ -21,21 +21,21 @@ Here shows some API design examples.
 
 Here shows what and how CLAKEFILE should express.
 
-    ;; A task that print hello.
-    (clake:deftask :hello
+    ;; A target that print hello.
+    (clake:deftarget "hello" ()
       (print "do task hello!")
       (terpri))
 
-    ;; Tasks that build an executable with depencency.
+    ;; Targets that build an executable with depencency.
     (defparameter cc "gcc")
 
-    (clake:deffile "hello" ("hello.o" "message.o")
+    (clake:deftarget "hello" ("hello.o" "message.o")
       (sh #?"#{cc} -o hello hello.o message.o"))
 
-    (clake:deffile "hello.o" ("hello.c")
+    (clake:deftarget "hello.o" ("hello.c")
       (sh #?"#{cc} -c hello.c"))
 
-    (clake:deffile "message.o" ("message.c")
+    (clake:deftarget "message.o" ("message.c")
       (sh #?"#{cc} -c message.c"))
 
 ## Design requirements
