@@ -27,10 +27,17 @@ Here shows what and how CLAKEFILE should express.
   (print "do task hello!")
   (terpri))
 
-;; A task that build an executable with object file depencency.
+;; Tasks that build an executable with depencency.
 (defparameter cc "gcc")
-(clack:deffile "hello" ("hello.o" "message.o")
+
+(clake:deffile "hello" ("hello.o" "message.o")
   (sh #?"#{cc} -o hello hello.o message.o"))
+
+(clake:deffile "hello.o" ("hello.c")
+  (sh #?"#{cc} -c hello.c"))
+
+(clake:deffile "message.o" ("message.c")
+  (sh #?"#{cc} -c message.c"))
 ```
 
 ## Design requirements
