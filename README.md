@@ -42,6 +42,7 @@ Here shows what and how CLAKEFILE should express.
 
 ## Design requirements
 - dynamic task definition
+- expected number of tasks in a CLAKEFILE is ~100
 
 ## Author
 
