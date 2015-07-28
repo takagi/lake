@@ -21,24 +21,22 @@ Here shows some API design examples.
 
 Here shows what and how CLAKEFILE should express.
 
-```common-lisp
-;; A task that print hello.
-(clake:deftask :hello
-  (print "do task hello!")
-  (terpri))
+    ;; A task that print hello.
+    (clake:deftask :hello
+      (print "do task hello!")
+      (terpri))
 
-;; Tasks that build an executable with depencency.
-(defparameter cc "gcc")
+    ;; Tasks that build an executable with depencency.
+    (defparameter cc "gcc")
 
-(clake:deffile "hello" ("hello.o" "message.o")
-  (sh #?"#{cc} -o hello hello.o message.o"))
+    (clake:deffile "hello" ("hello.o" "message.o")
+      (sh #?"#{cc} -o hello hello.o message.o"))
 
-(clake:deffile "hello.o" ("hello.c")
-  (sh #?"#{cc} -c hello.c"))
+    (clake:deffile "hello.o" ("hello.c")
+      (sh #?"#{cc} -c hello.c"))
 
-(clake:deffile "message.o" ("message.c")
-  (sh #?"#{cc} -c message.c"))
-```
+    (clake:deffile "message.o" ("message.c")
+      (sh #?"#{cc} -c message.c"))
 
 ## Design requirements
 - dynamic task definition
