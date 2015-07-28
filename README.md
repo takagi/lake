@@ -56,6 +56,7 @@ Here shows what and how Clakefile should express.
 - up-to-date check
 - duplicated target names allowed, executed respectively
 - make(1)'s internal macros
+- qlot interface
 
 ## Author
 
