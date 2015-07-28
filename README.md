@@ -42,7 +42,7 @@ Here shows what and how CLAKEFILE should express.
       (sh "rm -f hello hello.o message.o"))
 
     ;; The "all" target.
-    (clake:deftarget "all" ("hello" "som"))
+    (clake:deftarget "all" ("hello" "som") :phony t)
     
     (clake:deftarget "hello" ("hello.c")
       (sh #?"#{cc} -o hello hello.c"))
