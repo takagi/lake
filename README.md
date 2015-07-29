@@ -15,7 +15,7 @@ Here shows some API design examples.
     (clake:clake)
     
     ;; Do a target specifying its name for Clakefile in the current directory.
-    (clake:clake :hello)
+    (clake:clake "hello")
 
 ## Clakefile design exploration
 
