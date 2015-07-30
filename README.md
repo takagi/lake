@@ -25,6 +25,9 @@ Here shows some API design examples.
     
     ;; Also do a file task in namespace.
     (clake:clake "hello:hello")
+    
+    ;; Shell command interface is provided for convenience.
+    (clake:sh "pwd") 
 
 ## Clakefile design exploration
 
@@ -68,8 +71,12 @@ Here shows what and how Clakefile should express.
         (sh "./hello"))
       
       (clake:deffile "hello" ("hello.c")
-        (sh #?"#{cc} -o hello hello.c")))
-    
+        (sh #?"#{cc} -o hello hello.c"))
+      
+      ;; A file task should depend on only file tasks, not on tasks.
+      (clake:deffile "hello.o" ("say")
+        (sh "false")))
+
     ;; Can't use colons in a task name because they are reserved for namespace delimiter.
     (clake:deftask "hel:lo" ())
 
