@@ -19,6 +19,12 @@ Here shows some API design examples.
     
     ;; Do a task specifying its name for Clakefile in the current directory.
     (clake:clake "hello")
+    
+    ;; Do a task in namespace.
+    (clake:clake "hello:say")
+    
+    ;; Also do a file task in namespace.
+    (clake:clake "hello:hello")
 
 ## Clakefile design exploration
 
@@ -63,6 +69,9 @@ Here shows what and how Clakefile should express.
       
       (clake:deffile "hello" ("hello.c")
         (sh #?"#{cc} -o hello hello.c")))
+    
+    ;; Can't use colons in a task name because they are reserved for namespace delimiter.
+    (clake:deftask "hel:lo" ())
 
 ## Design requirements
 - dynamic task definition
