@@ -80,7 +80,7 @@ There are some kinds of "Task" representing a sequence of shell commands.
 |Name|Clakefile|Description|
 |---|---|---|
 |Task|deftask|This represents a base concept processing a sequence of shell commands.|
-|File task|deffile|This represents a task with a file's up-to-date check.|
+|File task|deffile|This represents a task resolving file dependency with up-to-date check.|
 
 ## Design requirements
 - dynamic task definition
