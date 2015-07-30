@@ -73,6 +73,15 @@ Here shows what and how Clakefile should express.
     ;; Can't use colons in a task name because they are reserved for namespace delimiter.
     (clake:deftask "hel:lo" ())
 
+## Task kinds
+
+There are some kinds of "Task" representing a sequence of shell commands.
+
+|Name|Clakefile|Description|
+|---|---|---|
+|Task|deftask|This represents a base concept processing a sequence of shell commands.|
+|File task|deffile|This represents a task with a file's up-to-date check.|
+
 ## Design requirements
 - dynamic task definition
 - expected number of tasks in a Clakefile is ~100
@@ -81,6 +90,7 @@ Here shows what and how Clakefile should express.
 - make(1)'s internal macros
 - ros interface
 - modularity
+- parallel task execution
 
 ## Author
 
