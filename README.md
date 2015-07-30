@@ -79,6 +79,9 @@ Here shows what and how Clakefile should express.
 
     ;; Can't use colons in a task name because they are reserved for namespace delimiter.
     (clake:deftask "hel:lo" ())
+    
+    ;; Make a directory.
+    (clake:defdirectory "some/directory")
 
 ## Task kinds
 
@@ -88,6 +91,7 @@ There are some kinds of "Task" representing a sequence of shell commands.
 |---|---|---|
 |Task|deftask|This represents a base concept processing a sequence of shell commands.|
 |File task|deffile|This represents a task resolving file dependency with up-to-date check.|
+|Directory task|defdirectory|Make a directory.|
 
 ## Design requirements
 - dynamic task definition
