@@ -62,7 +62,7 @@ Here shows what and how Clakefile should express.
         (sh "./hello"))
       
       (clake:deffile "hello" ("hello.c")
-        (cp #?"#{cc} -o hello hello.c")))
+        (sh #?"#{cc} -o hello hello.c")))
 
 ## Design requirements
 - dynamic task definition
