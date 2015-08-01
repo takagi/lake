@@ -40,55 +40,60 @@ Here shows some API design examples.
 
 Here shows what and how Clakefile should express.
 
+    (in-package :cl-user)
+    (defpackage :hello.clake
+      (:use :cl :clake))
+    (in-package :hello.clake)
+
     ;; A task that print hello.
-    (clake:task "hello" ()
+    (task "hello" ()
       (print "do task hello!")
       (terpri))
 
     ;; Tasks that build an executable with dependency.
     (defparameter cc "gcc")
     
-    (clake:file "hello" ("hello.o" "message.o")
+    (file "hello" ("hello.o" "message.o")
       (sh #?"#{cc} -o hello hello.o message.o"))
     
-    (clake:file "hello.o" ("hello.c")
+    (file "hello.o" ("hello.c")
       (sh #?"#{cc} -c hello.c"))
 
-    (clake:file "message.o" ("message.c")
+    (file "message.o" ("message.c")
       (sh #?"#{cc} -c message.c"))
 
-    (clake:task "clean" ()
+    (task "clean" ()
       (sh "rm -f hello hello.o message.o"))
 
     ;; The "all" task.
-    (clake:task "all" ("hello" "som"))
+    (task "all" ("hello" "som"))
     
-    (clake:file "hello" ("hello.c")
+    (file "hello" ("hello.c")
       (sh #?"#{cc} -o hello hello.c"))
     
-    (clake:file "som" ("som.c")
+    (file "som" ("som.c")
       (sh #?"#{cc} -o som som.c"))
 
     ;; Namespaces
-    (clake:namespace "hello"
+    (namespace "hello"
     
       ;; TBD: How should depencency in a namespace behave?
       ;;      Does this "hello" dependency refer a task only in "hello" namespace?
-      (clake:task "say" ("hello")
+      (task "say" ("hello")
         (sh "./hello"))
       
-      (clake:file "hello" ("hello.c")
+      (file "hello" ("hello.c")
         (sh #?"#{cc} -o hello hello.c"))
       
       ;; A file task should depend on only file tasks, not on tasks.
-      (clake:file "hello.o" ("say")
+      (file "hello.o" ("say")
         (sh "false")))
 
     ;; Can't use colons in a task name because they are reserved for namespace delimiter.
-    (clake:task "hel:lo" ())
+    (task "hel:lo" ())
     
     ;; Make a directory.
-    (clake:directory "some/directory")
+    (directory "some/directory")
 
 ## Task kinds
 
