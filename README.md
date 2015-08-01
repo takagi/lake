@@ -18,8 +18,9 @@ Here shows some API design examples.
     ;; TBD: 以下のどちらを採用するか？
     ;;      ・Unix 的に、カレントディレクトリや asdf:system-source-directory の直下の Clakefile を探す
     ;;      ・Lisp 的に、先にタスク定義を load しておく。ASDF
-    ;;      -> REPL からは Lisp 的に、シェルからは Unix 的に振る舞うのが良い
-    ;;      -> パケージについてどうしよう？
+    ;;      -> 1) REPL からは Lisp 的に、シェルからは Unix 的に振る舞うのがよい、とする
+    ;;            パケージについてどうしよう？ターゲット名であると同時に、ファイル名でもある
+    ;;         2) Unix の世界を Lisp から間接的に操作するものなので、Unix 的に振る舞えばよい、とする
     (clake:clake)
 
     ;; Do a task specifying its name for Clakefile in the current directory.
