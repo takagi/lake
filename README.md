@@ -34,54 +34,54 @@ Here shows some API design examples.
 Here shows what and how Clakefile should express.
 
     ;; A task that print hello.
-    (clake:deftask "hello" ()
+    (clake:task "hello" ()
       (print "do task hello!")
       (terpri))
 
     ;; Tasks that build an executable with dependency.
     (defparameter cc "gcc")
     
-    (clake:deffile "hello" ("hello.o" "message.o")
+    (clake:file "hello" ("hello.o" "message.o")
       (sh #?"#{cc} -o hello hello.o message.o"))
     
-    (clake:deffile "hello.o" ("hello.c")
+    (clake:file "hello.o" ("hello.c")
       (sh #?"#{cc} -c hello.c"))
 
-    (clake:deffile "message.o" ("message.c")
+    (clake:file "message.o" ("message.c")
       (sh #?"#{cc} -c message.c"))
 
-    (clake:deftask "clean" ()
+    (clake:task "clean" ()
       (sh "rm -f hello hello.o message.o"))
 
     ;; The "all" task.
-    (clake:deftask "all" ("hello" "som"))
+    (clake:task "all" ("hello" "som"))
     
-    (clake:deffile "hello" ("hello.c")
+    (clake:file "hello" ("hello.c")
       (sh #?"#{cc} -o hello hello.c"))
     
-    (clake:deffile "som" ("som.c")
+    (clake:file "som" ("som.c")
       (sh #?"#{cc} -o som som.c"))
 
     ;; Namespaces
-    (clake:with-namespace "hello"
+    (clake:namespace "hello"
     
       ;; TBD: How should depencency in a namespace behave?
       ;;      Does this "hello" dependency refer a task only in "hello" namespace?
-      (clake:deftask "say" ("hello")
+      (clake:task "say" ("hello")
         (sh "./hello"))
       
-      (clake:deffile "hello" ("hello.c")
+      (clake:file "hello" ("hello.c")
         (sh #?"#{cc} -o hello hello.c"))
       
       ;; A file task should depend on only file tasks, not on tasks.
-      (clake:deffile "hello.o" ("say")
+      (clake:file "hello.o" ("say")
         (sh "false")))
 
     ;; Can't use colons in a task name because they are reserved for namespace delimiter.
-    (clake:deftask "hel:lo" ())
+    (clake:task "hel:lo" ())
     
     ;; Make a directory.
-    (clake:defdirectory "some/directory")
+    (clake:directory "some/directory")
 
 ## Task kinds
 
@@ -89,9 +89,9 @@ There are some kinds of "Task" representing a sequence of shell commands.
 
 |Name|Clakefile|Description|
 |---|---|---|
-|Task|deftask|This represents a base concept processing a sequence of shell commands.|
-|File task|deffile|This represents a task resolving file dependency with up-to-date check.|
-|Directory task|defdirectory|Make a directory.|
+|Task|task|This represents a base concept processing a sequence of shell commands.|
+|File task|file|This represents a task resolving file dependency with up-to-date check.|
+|Directory task|directory|Make a directory.|
 
 ## Design requirements
 - dynamic task definition
