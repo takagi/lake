@@ -17,10 +17,11 @@ Here shows some API design examples.
     ;; Do the default task for Clakefile in the current directory.
     ;; TBD: 以下のどちらを採用するか？
     ;;      ・Unix 的に、カレントディレクトリや asdf:system-source-directory の直下の Clakefile を探す
-    ;;      ・Lisp 的に、先にタスク定義を load しておく
-    ;;      →REPL からは Lisp 的に、シェルからは Unix 的に振る舞うのが良い
+    ;;      ・Lisp 的に、先にタスク定義を load しておく。ASDF
+    ;;      -> REPL からは Lisp 的に、シェルからは Unix 的に振る舞うのが良い
+    ;;      -> パケージについてどうしよう？
     (clake:clake)
-    
+
     ;; Do a task specifying its name for Clakefile in the current directory.
     (clake:clake "hello")
     
