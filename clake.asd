@@ -21,7 +21,9 @@
   :depends-on (:cl-syntax
                :cl-syntax-annot
                :cl-annot-prove
-               :closer-mop)
+               :closer-mop
+               :alexandria
+               :uiop)
   :components ((:module "src"
                 :components
                 ((:file "clake")

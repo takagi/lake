@@ -1,0 +1,28 @@
+#|-*- mode:lisp -*-|#
+
+(in-package :cl-user)
+(defpackage :hello.clake
+  (:use :cl :clake)
+  (:shadowing-import-from :clake
+                          :directory))
+(in-package :hello.clake)
+
+;; A task that print hello.
+(task "hello" ()
+  (print "do task hello!")
+  (terpri))
+
+(file "hello.o" ("hello.c")
+  (sh "gcc -c hello.c"))
+
+(directory "dir")
+
+(directory "foo")                       ; superseded by the next
+
+(task "foo" ("bar")
+  (print "foo")
+  (terpri))
+
+(task "bar" ("foo")
+  (print "bar")
+  (terpri))
