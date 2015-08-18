@@ -51,6 +51,11 @@
 (defmethod task-to-be-executed-p ((task base-task))
   t)
 
+(defmethod %execute-task ((task base-task))
+  ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
+  ;; mismatch.
+  (execute-task task))
+
 (defmethod execute-task :before ((task base-task))
   (format t "~A: " (task-name task)))
 
@@ -79,6 +84,10 @@
      collect (get-task name)))
 
 (defvar *history*)
+
+(defmethod %execute-task ((task task))
+  (let ((*history* nil))
+    (execute-task task)))
 
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
@@ -201,8 +210,7 @@
 
 (defun execute-tasks (&optional (tasks *tasks*))
   (dolist (task (reverse tasks))
-    (let ((*history* nil))
-      (execute-task task))))
+    (%execute-task task)))
 
 (defun clake (pathname)
   ;; Find Clakefile to be loaded.
