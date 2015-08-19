@@ -2,7 +2,8 @@
 (defpackage clake
   (:use :cl
         :annot.doc)
-  (:export :task
+  (:export :clake
+           :task
            :file
            :directory
            :sh)
