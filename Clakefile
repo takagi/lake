@@ -7,6 +7,8 @@
                           :directory))
 (in-package :hello.clake)
 
+(task "default" ("hello" "hello.o" "dir"))
+
 ;; A task that print hello.
 (task "hello" ()
   (print "do task hello!")

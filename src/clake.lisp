@@ -203,7 +203,8 @@
 ;;;
 
 (defun get-clakefile-pathname ()
-  nil)
+  (or (probe-file (merge-pathnames "Clakefile" (getcwd)))
+      (error "No Clakefile found at ~A." (getcwd))))
 
 (defun load-clakefile (pathname)
   (load pathname))
@@ -212,11 +213,8 @@
   (dolist (task (reverse tasks))
     (%execute-task task)))
 
-(defun clake (pathname)
-  ;; Find Clakefile to be loaded.
-  ;; Load Clakefile.
-  ;; Execute the tasks.
+(defun clake (&key (target "default") (pathname (get-clakefile-pathname)))
   (format t "Current directory: ~A~%" (getcwd))
   (let ((*tasks* nil))
     (load-clakefile pathname)
-    (execute-tasks)))
+    (%execute-task (get-task target))))
