@@ -41,18 +41,40 @@
   `(let ((*namespace* (cons ,namespace *namespace*)))
      ,@body))
 
+(defun valid-task-name-p (task-name)
+  (and (string/= task-name "")
+       (not (find #\: task-name))))
+
+(defun valid-namespace-p (namespace)
+  (every #'valid-task-name-p namespace))
+
 (defun resolve-task-name (task-name namespace)
-  (check-type task-name string)
-  (dolist (prefix namespace)
-    (check-type prefix string))
-  (unless (string/= task-name "")
+  (unless (valid-task-name-p task-name)
     (error "The value ~S is an invalid task name." task-name))
-  (if (char= (aref task-name 0) #\:)
+  (unless (valid-namespace-p namespace)
+    (error "The value ~S is an invalid namespace." namespace))
+  (format nil "~{~A:~}~A" (reverse namespace) task-name))
+
+(defun valid-dependency-task-name-p (task-name)
+  (and (string/= task-name "")
+       (if (char= #\: (aref task-name 0))
+           (every #'valid-task-name-p
+                  (split-sequence #\: (subseq task-name 1)))
+           (every #'valid-task-name-p
+                  (split-sequence #\: task-name)))))
+
+(defun resolve-dependency-task-name (task-name namespace)
+  (unless (valid-dependency-task-name-p task-name)
+    (error "The value ~S is an invalid task name." task-name))
+  (unless (valid-namespace-p namespace)
+    (error "The value ~S is an invalid namespace." namespace))
+  (if (char= #\: (aref task-name 0))
       (subseq task-name 1)
       (format nil "~{~A:~}~A" (reverse namespace) task-name)))
 
 (defun task-name-leaf (task-name)
   (last1 (split-sequence #\: task-name)))
+
 
 
 ;;;
@@ -99,7 +121,7 @@
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
-                          (resolve-task-name task-name namespace))))
+                          (resolve-dependency-task-name task-name namespace))))
     (make-instance 'task :name name1 :dependency dependency1 :action action)))
 
 (defun dependency-file-name (task-name)
@@ -155,7 +177,7 @@
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
-                          (resolve-task-name task-name namespace))))
+                          (resolve-dependency-task-name task-name namespace))))
     (make-instance 'file-task
                    :name name1
                    :dependency dependency1
@@ -189,6 +211,8 @@
 (defclass directory-task (base-task) ())
 
 (defun make-directory-task (name namespace)
+  (unless (valid-task-name-p name)
+    (error "The value ~S is an invalid task name." name))
   (let ((name1 (resolve-task-name name namespace)))
     (make-instance 'directory-task :name name1)))
 
