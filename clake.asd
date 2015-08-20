@@ -24,6 +24,8 @@
                :closer-mop
                :alexandria
                :split-sequence
+               :cl-syntax-interpol
+               :osicat
                :uiop)
   :components ((:module "src"
                 :components

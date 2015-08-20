@@ -1,10 +1,12 @@
 #|-*- mode:lisp -*-|#
 (in-package :cl-user)
 (defpackage :clake.user
-  (:use :cl :clake)
+  (:use :cl :clake :cl-syntax :osicat)
   (:shadowing-import-from :clake
                           :directory))
 (in-package :clake.user)
+
+(use-syntax :interpol)
 
 (task "default" ("hello" "hello.o" "dir" "name:foo"))
 
