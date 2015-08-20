@@ -7,7 +7,8 @@
            :task
            :file
            :directory
-           :sh)
+           :sh
+           :echo)
   (:shadow :directory)
   (:import-from :alexandria
                 :once-only)
@@ -215,8 +216,13 @@
 ;;; Run
 ;;;
 
-(defun sh (command)
-  (run-program command :ignore-error-status t :output t :error-output t))
+(defun echo (string)
+  (write-line string))
+
+(defun sh (command &key echo)
+  (when echo
+    (echo command))
+  (run-program command :output t :error-output t))
 
 
 ;;;
