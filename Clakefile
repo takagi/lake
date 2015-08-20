@@ -7,11 +7,19 @@
                           :directory))
 (in-package :hello.clake)
 
-(task "default" ("hello" "hello.o" "dir"))
+(task "default" ("hello" "hello.o" "dir" "name:foo"))
 
 ;; A task that print hello.
 (task "hello" ()
   (print "do task hello!")
+  (terpri))
+
+(task "hello" ("hello.c")
+  (print "do task hello2!")
+  (terpri))
+
+(file "hello3" ("hello.c")
+  (print "do task hello3!")
   (terpri))
 
 (file "hello.o" ("hello.c")
@@ -28,3 +36,17 @@
 (task "bar" ("foo")
   (print "bar")
   (terpri))
+
+;; namespace
+(namespace "name"
+
+  (task "foo" ("bar")
+    (print "name.foo")
+    (terpri))
+
+  (task "bar" ()
+    (print "name.bar")
+    (terpri))
+
+  (file "hello.o" ("hello.c")
+    (sh "gcc -c hello.c")))

@@ -23,6 +23,7 @@
                :cl-annot-prove
                :closer-mop
                :alexandria
+               :split-sequence
                :uiop)
   :components ((:module "src"
                 :components

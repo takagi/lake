@@ -3,6 +3,7 @@
   (:use :cl
         :annot.doc)
   (:export :clake
+           :namespace
            :task
            :file
            :directory
@@ -10,6 +11,8 @@
   (:shadow :directory)
   (:import-from :alexandria
                 :once-only)
+  (:import-from :split-sequence
+                :split-sequence)
   (:import-from :uiop
                 :getcwd
                 :run-program
@@ -25,6 +28,30 @@
 
 (defun last1 (list)
   (car (last list)))
+
+
+;;;
+;;; Namespace
+;;;
+
+(defvar *namespace* nil)
+
+(defmacro namespace (namespace &body body)
+  `(let ((*namespace* (cons ,namespace *namespace*)))
+     ,@body))
+
+(defun resolve-task-name (task-name namespace)
+  (check-type task-name string)
+  (dolist (prefix namespace)
+    (check-type prefix string))
+  (unless (string/= task-name "")
+    (error "The value ~S is an invalid task name." task-name))
+  (if (char= (aref task-name 0) #\:)
+      (subseq task-name 1)
+      (format nil "~{~A:~}~A" (reverse namespace) task-name)))
+
+(defun task-name-leaf (task-name)
+  (last1 (split-sequence #\: task-name)))
 
 
 ;;;
@@ -57,12 +84,6 @@
   ;; mismatch.
   (execute-task task))
 
-(defmethod execute-task :before ((task base-task))
-  (format t "~A: " (task-name task)))
-
-(defmethod execute-task :after ((task base-task))
-  (format t "done.~%"))
-
 
 ;;;
 ;;; Task
@@ -72,17 +93,16 @@
   ((dependency :initarg :dependency :reader task-dependency)
    (action :initarg :action :reader task-action)))
 
-(defun make-task (name dependency action)
-  (check-type name string)
-  (dolist (name1 dependency)
-    (check-type name1 string))
+(defun make-task (name namespace dependency action)
   (check-type action function)
-  (make-instance 'task :name name :dependency dependency :action action))
+  (let ((name1 (resolve-task-name name namespace))
+        (dependency1 (loop for task-name in dependency
+                        collect
+                          (resolve-task-name task-name namespace))))
+    (make-instance 'task :name name1 :dependency dependency1 :action action)))
 
-(defun task-dependency-tasks (task)
-  (loop for name in (task-dependency task)
-     if (task-exists-p name)
-     collect (get-task name)))
+(defun dependency-file-name (task-name)
+  (task-name-leaf task-name))
 
 (defvar *history*)
 
@@ -93,26 +113,34 @@
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
   (let ((*history* (cons task *history*)))
-    (loop for task1 in (task-dependency-tasks task)
-       do ;; Error if has circular dependency.
-          (unless (not (member task1 *history* :test #'task=))
-            (error "The task ~S has circular dependency." (task-name
-                                                           (last1 *history*))))
-          ;; Execute a dependency task.
-          (execute-task task1))))
+    (loop for task-name in (task-dependency task)
+       do (cond
+            ((task-exists-p task-name)
+             (let ((task1 (get-task task-name)))
+               ;; Error if has circular dependency.
+               (unless (not (member task1 *history* :test #'task=))
+                 (error "The task ~S has circular dependency."
+                        (task-name (last1 *history*))))
+               ;; Execute a dependency task.
+               (execute-task task1)))
+            ((file-exists-p (dependency-file-name task-name))
+             ;; Noop.
+             nil)
+            (t (error "Don't know how to build task ~S." task-name))))))
 
 (defmethod execute-task ((task task))
   ;; Execute the task.
-  (funcall (task-action task)))
-
-(defmethod execute-task :around ((task task))
-  ;; Skip if not needed.
+  (format t "~A: " (task-name task))
   (if (task-to-be-executed-p task)
-      (call-next-method)
-      (format t "~A: skipped.~%" (task-name task))))
+      (progn
+        (funcall (task-action task))
+        (format t "done.~%"))
+      (format t "skipped.~%"))
+  (values))
 
 (defmacro task (name dependency &body action)
-  `(register-task (make-task ,name ',dependency #'(lambda () ,@action))))
+  `(register-task (make-task ,name *namespace* ',dependency
+                             #'(lambda () ,@action))))
 
 
 ;;;
@@ -121,28 +149,36 @@
 
 (defclass file-task (task) ())
 
-(defun make-file-task (name dependency action)
-  (check-type name string)
-  (dolist (name1 dependency)
-    (check-type name1 string))
+(defun make-file-task (name namespace dependency action)
   (check-type action function)
-  (make-instance 'file-task :name name :dependency dependency :action action))
+  (let ((name1 (resolve-task-name name namespace))
+        (dependency1 (loop for task-name in dependency
+                        collect
+                          (resolve-task-name task-name namespace))))
+    (make-instance 'file-task
+                   :name name1
+                   :dependency dependency1
+                   :action action)))
+
+(defun file-task-file-name (file-task)
+  (task-name-leaf (task-name file-task)))
 
 (defun file-timestamp (file-name)
   (file-write-date file-name))
 
 (defun file-task-out-of-date (file-task)
-  (let ((stamp (file-timestamp (task-name file-task))))
-    (loop for name in (task-dependency file-task)
-       if (< stamp (file-timestamp name))
+  (let ((stamp (file-timestamp (file-task-file-name file-task))))
+    (loop for task-name in (task-dependency file-task)
+       if (< stamp (file-timestamp (dependency-file-name task-name)))
        return t)))
 
 (defmethod task-to-be-executed-p ((file-task file-task))
-  (or (not (file-exists-p (task-name file-task)))
+  (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
 (defmacro file (name dependency &body action)
-  `(register-task (make-file-task ,name ',dependency #'(lambda () ,@action))))
+  `(register-task (make-file-task ,name *namespace* ',dependency
+                                  #'(lambda () ,@action))))
 
 
 ;;;
@@ -151,9 +187,12 @@
 
 (defclass directory-task (base-task) ())
 
-(defun make-directory-task (name)
-  (check-type name string)
-  (make-instance 'directory-task :name name))
+(defun make-directory-task (name namespace)
+  (let ((name1 (resolve-task-name name namespace)))
+    (make-instance 'directory-task :name name1)))
+
+(defun directory-task-directory-name (directory-task)
+  (task-name-leaf (task-name directory-task)))
 
 (defun ensure-directory-pathspec (pathspec)
   (if (char/= (aref (reverse pathspec) 0) #\/)
@@ -161,12 +200,15 @@
       pathspec))
 
 (defmethod execute-task ((directory-task directory-task))
+  (format t "~A: " (task-name directory-task))
   (let ((name (ensure-directory-pathspec
-               (task-name directory-task))))
-    (ensure-directories-exist name)))
+               (directory-task-directory-name directory-task))))
+    (ensure-directories-exist name))
+  (format t "done.~%")
+  (values))
 
 (defmacro directory (name)
-  `(register-task (make-directory-task ,name)))
+  `(register-task (make-directory-task ,name *namespace*)))
 
 
 ;;;
@@ -209,10 +251,6 @@
 
 (defun load-clakefile (pathname)
   (load pathname))
-
-(defun execute-tasks (&optional (tasks *tasks*))
-  (dolist (task (reverse tasks))
-    (%execute-task task)))
 
 (defun clake (&key (target "default") (pathname (get-clakefile-pathname)))
   (format t "Current directory: ~A~%" (getcwd))
