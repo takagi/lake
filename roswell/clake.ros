@@ -6,11 +6,12 @@ exec ros -Q -- $0 "$@"
 
 (ql:quickload :clake :silent t)
 
-(defun main (&optional target &rest argv)
+(defun main (&rest argv)
   (declare (ignorable argv))
   (handler-case
-      (if target
-          (clake:clake :target target)
+      (if argv
+          (loop for target in argv
+             do (clake:clake :target target))
           (clake:clake))
     (error (e)
       (format t "~A~%" e)

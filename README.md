@@ -14,11 +14,11 @@ Loads a Clakefile specified with `pathname` to execute a task of name `target` d
 
 ## Command line interface
 
-Clake can be also used via command line interface. Currently, only target is allowed to execute.
+Clake can be also used via command line interface. Specifying a number of targets is allowd in the command line interface.
 
 **SYNOPSIS**
 
-    clake [-f clakefile] target
+    clake [-f clakefile] targets...
 
 **OPTIONS**
 
