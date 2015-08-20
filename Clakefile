@@ -1,11 +1,10 @@
 #|-*- mode:lisp -*-|#
-
 (in-package :cl-user)
-(defpackage :hello.clake
+(defpackage :clake.user
   (:use :cl :clake)
   (:shadowing-import-from :clake
                           :directory))
-(in-package :hello.clake)
+(in-package :clake.user)
 
 (task "default" ("hello" "hello.o" "dir" "name:foo"))
 
