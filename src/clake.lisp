@@ -153,12 +153,14 @@
 
 (defmethod execute-task ((task task))
   ;; Execute the task.
-  (format t "~A: " (task-name task))
+  (format *error-output* "~A: " (task-name task))
+  (force-output *error-output*)
   (if (task-to-be-executed-p task)
       (progn
         (funcall (task-action task))
-        (format t "done.~%"))
-      (format t "skipped.~%"))
+        (format *error-output* "done.~%"))
+      (format *error-output* "skipped.~%"))
+  (force-output *error-output*)
   (values))
 
 (defmacro task (name dependency &body action)
@@ -225,11 +227,11 @@
       pathspec))
 
 (defmethod execute-task ((directory-task directory-task))
-  (format t "~A: " (task-name directory-task))
+  (format *error-output* "~A: " (task-name directory-task))
   (let ((name (ensure-directory-pathspec
                (directory-task-directory-name directory-task))))
     (ensure-directories-exist name))
-  (format t "done.~%")
+  (format *error-output* "done.~%")
   (values))
 
 (defmacro directory (name)
@@ -283,7 +285,7 @@
   (load pathname))
 
 (defun clake (&key (target "default") (pathname (get-clakefile-pathname)))
-  (format t "Current directory: ~A~%" (getcwd))
+  (format *error-output* "Current directory: ~A~%" (getcwd))
   (let ((*tasks* nil))
     (load-clakefile pathname)
     (%execute-task (get-task target))))
