@@ -1,41 +1,26 @@
-general:
-  branches:
-    ignore:
-      - gh-pages
-
 machine:
   environment:
     LISP: sbcl
     PATH: ~/.roswell/bin:$PATH
-    COVERALLS: true
+
+checkout:
+  pre:
+    - curl -L https://raw.githubusercontent.com/snmsts/roswell/master/scripts/install-for-ci.sh | sh
 
 dependencies:
   pre:
-    - curl -L https://raw.githubusercontent.com/snmsts/roswell/master/scripts/install-for-ci.sh | sh
-    - ros run -- --version
-    - git clone https://github.com/eudoxia0/docparser ~/lisp/docparser
-    - git clone https://github.com/CommonDoc/codex ~/lisp/codex
-    - git clone https://github.com/CommonDoc/common-doc ~/lisp/common-doc
-    - git clone https://github.com/CommonDoc/pandocl ~/lisp/pandocl
-    - git clone https://github.com/CommonDoc/parenml ~/lisp/parenml
-    - git clone https://github.com/Rudolph-Miller/roswell-scripts ~/lisp/roswell-scripts
-    - git clone https://github.com/Rudolph-Miller/cl-annot-prove ~/lisp/cl-annot-prove
-    - cd ~/lisp/roswell-scripts/roswell && ros install gendoc && ros install gh-pages
+    - ros install qlot
+    - ros install prove
 
-    - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
+  override:
+    - if [ -e qlfile ]; then qlot install; fi;
+    - echo "(ros:ignore-shebang)" >> ~/.roswell/init.lisp
 
   cache_directories:
     - ~/.roswell
-    
+    - quicklisp
+
 test:
   override:
     - ros run -- --version
-    - ros -s cl-annot-prove -e '(or (annot.prove:run-system-tests :elb-log) (uiop:quit -1))'
-
-deployment:
-  deployment:
-     branch: master
-     commands:
-       - git config --global user.name "Rudolph-Miller"
-       - git config --global user.email "chopsticks.tk.ppfm@gmail.com"
-       - gh-pages
+    - run-prove clake-test.asd

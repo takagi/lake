@@ -20,7 +20,6 @@
   :homepage "https://github.com/Rudolph-Miller/clake"
   :depends-on (:cl-syntax
                :cl-syntax-annot
-               :cl-annot-prove
                :closer-mop
                :alexandria
                :split-sequence
@@ -29,8 +28,7 @@
                :uiop)
   :components ((:module "src"
                 :components
-                ((:file "clake")
-                 (:file "core"))))
+                ((:file "clake"))))
   :description "Clake is a Rake-like program implemented in Common Lisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames
@@ -44,5 +42,4 @@
                                :fill-pointer t)))
           (setf (fill-pointer seq) (read-sequence seq stream))
           seq)))
-  :perform (test-op (op c)
-                    (uiop:symbol-call :cl-annot-prove :run-system-tests c)))
+  :in-order-to ((test-op (load-op clake-test))))
