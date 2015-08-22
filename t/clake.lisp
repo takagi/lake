@@ -294,8 +294,7 @@
 
   (let ((clake::*tasks* nil)
         (task (clake::make-file-task "foo" nil '("bar") #'noop)))
-    (sh "touch foo")
-    (sh "touch bar")
+    (sh "touch foo; sleep 1; touch bar")
     (is (clake::file-task-out-of-date task)
         t)
     (sh "touch foo")
