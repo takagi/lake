@@ -12,42 +12,31 @@
 
 ;; A task that print hello.
 (task "hello" ()
-  (print "do task hello!")
-  (terpri))
+  (echo "do task hello!"))
 
-(task "hello" ("hello.c")
-  (print "do task hello2!")
-  (terpri))
-
-(file "hello3" ("hello.c")
-  (print "do task hello3!")
-  (terpri))
+(defparameter cc "gcc")
 
 (file "hello.o" ("hello.c")
-  (sh "gcc -c hello.c"))
+  (sh #?"${cc} -c hello.c"))
 
 (directory "dir")
 
-(directory "foo")                       ; superseded by the next
+(directory "foo")                       ; superseded by the next task.
 
 (task "foo" ("bar")
-  (print "foo")
-  (terpri))
+  (echo "foo"))
 
 (task "bar" ("foo")
-  (print "bar")
-  (terpri))
+  (echo "bar"))
 
 ;; namespace
 (namespace "name"
 
   (task "foo" ("bar")
-    (print "name.foo")
-    (terpri))
+    (echo "name.foo"))
 
   (task "bar" ()
-    (print "name.bar")
-    (terpri))
+    (echo "name.bar"))
 
   (file "hello.o" ("hello.c")
     (sh "gcc -c hello.c")))
