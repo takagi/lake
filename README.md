@@ -1,5 +1,6 @@
 # Clake - Clake is a [Rake](https://github.com/ruby/rake)-like program implemented in Common Lisp.
-[![Build Status](https://circleci.com/gh/Rudolph-Miller/clake.svg?style=shield)](https://circleci.com/gh/Rudolph-Miller/clake)
+[![Circle CI](https://circleci.com/gh/takagi/clake.svg?style=shield)](https://circleci.com/gh/takagi/clake)
+[![Coverage Status](https://coveralls.io/repos/takagi/clake/badge.svg?branch=master&service=github)](https://coveralls.io/github/takagi/clake?branch=master)
 
 ## API
 
