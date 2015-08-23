@@ -247,6 +247,14 @@
               simple-error
               "dependency task not found.")))
 
+(subtest "task macro"
+
+  (let ((clake::*tasks* nil))
+    (task "foo" ()
+      (echo "foo"))
+    (is-print (clake::%execute-task (clake::get-task "foo"))
+              (format nil "foo~%"))))
+
 
 ;;;
 ;;; File task
