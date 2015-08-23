@@ -6,13 +6,31 @@ exec ros -Q -- $0 "$@"
 
 (ql:quickload :clake :silent t)
 
+(defun print-help ()
+  (write-line "Usage: clake [options] [target] ...")
+  (write-line "Options:")
+  (write-line "  -f FILE       Use FILE as a clakefile.")
+  (write-line "  -h            Print this message and exit."))
+
 (defun main (&rest argv)
   (declare (ignorable argv))
   (handler-case
-      (if argv
-          (loop for target in argv
-             do (clake:clake :target target))
-          (clake:clake))
+      (let (targets pathname f-mode)
+        (loop for arg in argv
+           do (cond
+                (f-mode (setf pathname arg)
+                        (setf f-mode nil))
+                ((string= "-f" arg) (setf f-mode t))
+                ((string= "-h" arg) (print-help)
+                                    (ros:quit 1))
+                (t (push arg targets))))
+        (if targets
+            (loop for target in targets
+               do (apply #'clake:clake `(:target ,target
+                                         ,@(when pathname
+                                             `(:pathname ,pathname)))))
+            (apply #'clake:clake `(,@(when pathname
+                                       `(:pathname ,pathname))))))
     (error (e)
       (format t "~A~%" e)
       (ros:quit -1))))

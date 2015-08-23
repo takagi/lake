@@ -30,12 +30,14 @@ Clake can be also used via command line interface. Specifying a number of target
 
 **SYNOPSIS**
 
-    clake [-f clakefile] TARGETS...
+    clake [ -f clakefile ] [ options ] ... [ targets ] ...
 
 **OPTIONS**
 
-    -f [FILENAME]
-        (Not implemented) Uses FILENAME as the clakefile to search for.
+    -f FILE
+        Use FILE as a clakefile.
+    -h
+        Print usage.
 
 ## Clake-tools
 
