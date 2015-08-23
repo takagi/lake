@@ -5,14 +5,33 @@
         :prove)
   (:shadowing-import-from :clake
                           :directory)
+  (:import-from :alexandria
+                :with-gensyms)
   (:import-from :uiop
+                :getcwd
+                :chdir
                 :delete-file-if-exists
+                :delete-empty-directory
                 :directory-exists-p))
 (in-package :clake-test)
 
 (plan nil)
 
 (defun noop ())
+
+(defmacro with-test-directory (&body body)
+  (with-gensyms (olddir pathname)
+    `(let ((,olddir (getcwd))
+           (,pathname (merge-pathnames "t/"
+                       (asdf:system-source-directory :clake-test))))
+       (let ((*default-pathname-defaults* ,pathname))
+         (chdir ,pathname)
+         (unwind-protect
+              ,@body
+           (sh "rm -f foo bar")
+           (sh "rm -f hello.c hello.o")
+           (sh "rm -rf dir")
+           (chdir ,olddir))))))
 
 
 ;;;
@@ -216,16 +235,15 @@
     (is-print (clake::%execute-task task1)
               (format nil "foo:baz~%foo:bar~%")))
 
-  (let ((clake::*tasks* nil)
-        (task (clake::make-task "hello.o" nil '("hello.c")
-                                #'(lambda ()
-                                    (echo "hello.o")))))
-    (clake::register-task task)
-    (with-open-file (out "hello.c" :direction :output
-                                   :if-exists :supersede))
-    (is-print (clake::%execute-task task)
-              (format nil "hello.o~%"))
-    (delete-file-if-exists "hello.c"))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task (clake::make-task "hello.o" nil '("hello.c")
+                                  #'(lambda ()
+                                      (echo "hello.o")))))
+      (clake::register-task task)
+      (sh "touch hello.c")
+      (is-print (clake::%execute-task task)
+                (format nil "hello.o~%"))))
 
   (is-error (clake::%execute-task :foo)
             simple-error
@@ -300,16 +318,15 @@
 
 (subtest "file-task-out-of-date"
 
-  (let ((clake::*tasks* nil)
-        (task (clake::make-file-task "foo" nil '("bar") #'noop)))
-    (sh "touch foo; sleep 1; touch bar")
-    (is (clake::file-task-out-of-date task)
-        t)
-    (sh "touch foo")
-    (is (clake::file-task-out-of-date task)
-        nil)
-    (delete-file-if-exists "foo")
-    (delete-file-if-exists "bar"))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task (clake::make-file-task "foo" nil '("bar") #'noop)))
+      (sh "touch foo; sleep 1; touch bar")
+      (is (clake::file-task-out-of-date task)
+          t)
+      (sh "touch foo")
+      (is (clake::file-task-out-of-date task)
+          nil)))
 
   (let ((clake::*tasks* nil)
         (task (clake::make-file-task "foo" nil '("bar") #'noop)))
@@ -317,13 +334,13 @@
               error
               "no target file exists."))
 
-  (let ((clake::*tasks* nil)
-        (task (clake::make-file-task "foo" nil '("bar") #'noop)))
-    (sh "touch foo")
-    (is-error (clake::file-task-out-of-date task)
-              error
-              "no dependency file exists.")
-    (delete-file-if-exists "foo"))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task (clake::make-file-task "foo" nil '("bar") #'noop)))
+      (sh "touch foo")
+      (is-error (clake::file-task-out-of-date task)
+                error
+                "no dependency file exists.")))
 
   (is-error (clake::file-task-out-of-date :foo)
             simple-error
@@ -331,28 +348,27 @@
 
 (subtest "execute-task"
 
-  (let ((clake::*tasks* nil)
-        (task1 (clake::make-file-task "foo" nil '("bar") #'(lambda ()
-                                                             (sh "touch foo")
-                                                             (echo "foo")))))
-    (sh "touch bar")
-    (is-print (clake::%execute-task task1)
-              (format nil "foo~%"))
-    (is-print (clake::%execute-task task1)
-              "")
-    (delete-file-if-exists "foo")
-    (delete-file-if-exists "bar")))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task1 (clake::make-file-task "foo" nil '("bar")
+                                        #'(lambda ()
+                                            (sh "touch foo")
+                                            (echo "foo")))))
+      (sh "touch bar")
+      (is-print (clake::%execute-task task1)
+                (format nil "foo~%"))
+      (is-print (clake::%execute-task task1)
+                ""))))
 
 (subtest "file-task"
 
-  (let ((clake::*tasks* nil))
-    (file "hello.o" ("hello.c")
-      (echo "gcc -c hello.c"))
-    (sh "touch hello.c")
-    (is-print (clake::%execute-task (clake::get-task "hello.o"))
-              (format nil "gcc -c hello.c~%"))
-    (delete-file-if-exists "hello.c")
-    (delete-file-if-exists "hello.o")))
+  (with-test-directory
+    (let ((clake::*tasks* nil))
+      (file "hello.o" ("hello.c")
+        (echo "gcc -c hello.c"))
+      (sh "touch hello.c")
+      (is-print (clake::%execute-task (clake::get-task "hello.o"))
+                (format nil "gcc -c hello.c~%")))))
 
 
 ;;;
@@ -383,32 +399,31 @@
 
 (subtest "execute-task"
 
-  (let ((clake::*tasks* nil)
-        (task (clake::make-directory-task "dir" nil)))
-    (clake::register-task task)
-    (clake::%execute-task task)
-    (is (and (directory-exists-p "dir") t)
-        t)
-    (sh "rmdir dir"))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task (clake::make-directory-task "dir" nil)))
+      (clake::register-task task)
+      (clake::%execute-task task)
+      (is (and (directory-exists-p "dir") t)
+          t)))
 
-  (let ((clake::*tasks* nil)
-        (task (clake::make-directory-task "dir" nil)))
-    (clake::register-task task)
-    (sh "mkdir dir")
-    (clake::%execute-task task)
-    (is (and (directory-exists-p "dir") t)
-        t)
-    (sh "rmdir dir")))
+  (with-test-directory
+    (let ((clake::*tasks* nil)
+          (task (clake::make-directory-task "dir" nil)))
+      (clake::register-task task)
+      (sh "mkdir dir")
+      (clake::%execute-task task)
+      (is (and (directory-exists-p "dir") t)
+          t))))
 
 (subtest "directory-task"
 
-  (let ((clake::*tasks* nil))
-    (print (uiop:getcwd))
-    (directory "dir")
-    (clake::%execute-task (clake::get-task "dir"))
-    (is (and (directory-exists-p "dir") t)
-        t)
-    (sh "rmdir dir")))
+  (with-test-directory
+    (let ((clake::*tasks* nil))
+      (directory "dir")
+      (clake::%execute-task (clake::get-task "dir"))
+      (is (and (directory-exists-p "dir") t)
+          t))))
 
 
 ;;;
