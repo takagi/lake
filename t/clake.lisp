@@ -386,6 +386,10 @@
 ;;; Run
 ;;;
 
+(subtest "sh"
+  (is-print (sh "echo foo" :echo t)
+            (format nil "echo foo~%foo~%")))
+
 
 ;;;
 ;;; Task manager
