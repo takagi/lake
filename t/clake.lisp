@@ -343,6 +343,17 @@
     (delete-file-if-exists "foo")
     (delete-file-if-exists "bar")))
 
+(subtest "file-task"
+
+  (let ((clake::*tasks* nil))
+    (file "hello.o" ("hello.c")
+      (echo "gcc -c hello.c"))
+    (sh "touch hello.c")
+    (is-print (clake::%execute-task (clake::get-task "hello.o"))
+              (format nil "gcc -c hello.c~%"))
+    (delete-file-if-exists "hello.c")
+    (delete-file-if-exists "hello.o")))
+
 
 ;;;
 ;;; Directory task
