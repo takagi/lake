@@ -400,6 +400,16 @@
         t)
     (sh "rmdir dir")))
 
+(subtest "directory-task"
+
+  (let ((clake::*tasks* nil))
+    (print (uiop:getcwd))
+    (directory "dir")
+    (clake::%execute-task (clake::get-task "dir"))
+    (is (and (directory-exists-p "dir") t)
+        t)
+    (sh "rmdir dir")))
+
 
 ;;;
 ;;; Run
