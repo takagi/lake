@@ -166,6 +166,15 @@
             simple-error
             "invalid namespace."))
 
+(subtest "namespace macro"
+  (let ((clake::*tasks* nil))
+    (namespace "foo"
+      (namespace "bar"
+        (task "baz" ()
+          (echo "foo.bar.baz")))
+    (is-print (clake::%execute-task (clake::get-task "foo:bar:baz"))
+              (format nil "foo.bar.baz~%")))))
+
 
 ;;;
 ;;; Base task
