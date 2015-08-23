@@ -15,9 +15,9 @@ Loads a Clakefile specified with `pathname` to execute a task of name `target` d
 
 ### [Function] sh
 
-    SH command
+    SH command &key echo
 
-Spawns a subprocess that runs the specified `command` given as a string. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
+Spawns a subprocess that runs the specified `command` given as a string. When `echo` is t, prints `command` to the standard output before runs it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
 
 ### [Function] echo
 
@@ -27,7 +27,7 @@ Write the given `string` into the standard output followed by a new line, provid
 
 ## Command line interface
 
-Clake can be also used via command line interface. Specifying a number of targets is allowd here.
+Clake can be also used via command line interface, Clakefile in the current directory loaded. If no targets are specified, "default" is used for the default task name to be executed.
 
 **SYNOPSIS**
 
