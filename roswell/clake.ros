@@ -10,12 +10,13 @@ exec ros -Q -- $0 "$@"
   (write-line "Usage: clake [options] [target] ...")
   (write-line "Options:")
   (write-line "  -f FILE       Use FILE as a clakefile.")
-  (write-line "  -h            Print this message and exit."))
+  (write-line "  -h            Print this message and exit.")
+  (write-line "  -v            Verbose mode."))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
   (handler-case
-      (let (targets pathname f-mode)
+      (let (targets pathname f-mode v-mode)
         (loop for arg in argv
            do (cond
                 (f-mode (setf pathname arg)
@@ -23,14 +24,15 @@ exec ros -Q -- $0 "$@"
                 ((string= "-f" arg) (setf f-mode t))
                 ((string= "-h" arg) (print-help)
                                     (ros:quit 1))
+                ((string= "-v" arg) (setf v-mode t))
                 (t (push arg targets))))
-        (if targets
-            (loop for target in targets
-               do (apply #'clake:clake `(:target ,target
-                                         ,@(when pathname
-                                             `(:pathname ,pathname)))))
-            (apply #'clake:clake `(,@(when pathname
-                                       `(:pathname ,pathname))))))
+        (let ((params `(:verbose ,v-mode
+                        ,@(when pathname
+                            `(:pathname ,pathname)))))
+          (if targets
+              (loop for target in targets
+                 do (apply #'clake:clake :target target params))
+              (apply #'clake:clake params))))
     (error (e)
       (format t "~A~%" e)
       (ros:quit -1))))

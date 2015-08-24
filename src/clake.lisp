@@ -32,6 +32,23 @@
 
 
 ;;;
+;;; Verbose
+;;;
+
+(defvar *verbose* nil)
+
+(defun verbose (string &optional new-line (stream *error-output*))
+  (check-type string string)
+  (check-type stream stream)
+  (when *verbose*
+    (if new-line
+        (write-line string stream)
+        (write-string string stream))
+    (force-output stream))
+  (values))
+
+
+;;;
 ;;; Namespace
 ;;;
 
@@ -99,9 +116,6 @@
 (defmethod print-object ((task base-task) stream)
   (format stream "#<TASK ~S>" (task-name task)))
 
-(defmethod task-to-be-executed-p ((task base-task))
-  t)
-
 (defmethod %execute-task ((task base-task))
   ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
   ;; mismatch.
@@ -152,15 +166,12 @@
             (t (error "Don't know how to build task ~S." task-name))))))
 
 (defmethod execute-task ((task task))
+  ;; Show message if verbose.
+  (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (format *error-output* "~A: " (task-name task))
-  (force-output *error-output*)
-  (if (task-to-be-executed-p task)
-      (progn
-        (funcall (task-action task))
-        (format *error-output* "done.~%"))
-      (format *error-output* "skipped.~%"))
-  (force-output *error-output*)
+  (funcall (task-action task))
+  ;; Show message if verbose.
+  (verbose "done." t)
   (values))
 
 (defmacro task (name dependency &body action)
@@ -197,9 +208,23 @@
        if (< stamp (file-timestamp (dependency-file-name task-name)))
        return t)))
 
-(defmethod task-to-be-executed-p ((file-task file-task))
+(defmethod file-task-to-be-executed-p ((file-task file-task))
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
+
+(defmethod execute-task ((task file-task))
+  ;; Show message if verbose.
+  (verbose (format nil "~A: " (task-name task)))
+  ;; Execute the task if required.
+  (if (file-task-to-be-executed-p task)
+      ;; Execute the task.
+      (progn
+        (funcall (task-action task))
+        ;; Show message if verbose.
+        (verbose "done." t))
+      ;; Skip the task to show message if verbose.
+      (verbose "skipped." t))
+  (values))
 
 (defmacro file (name dependency &body action)
   `(register-task (make-file-task ,name *namespace* ',dependency
@@ -227,11 +252,14 @@
       pathspec))
 
 (defmethod execute-task ((directory-task directory-task))
-  (format *error-output* "~A: " (task-name directory-task))
+  ;; Show message if verbose.
+  (verbose (format nil "~A: " (task-name directory-task)))
+  ;; Execute the task.
   (let ((name (ensure-directory-pathspec
                (directory-task-directory-name directory-task))))
     (ensure-directories-exist name))
-  (format *error-output* "done.~%")
+  ;; Show message if verbose.
+  (verbose "done." t)
   (values))
 
 (defmacro directory (name)
@@ -286,8 +314,13 @@
 (defun load-clakefile (pathname)
   (load pathname))
 
-(defun clake (&key (target "default") (pathname (get-clakefile-pathname)))
-  (format *error-output* "Current directory: ~A~%" (getcwd))
-  (let ((*tasks* nil))
-    (load-clakefile pathname)
-    (%execute-task (get-task target))))
+(defun clake (&key (target "default")
+                   (pathname (get-clakefile-pathname))
+                   (verbose nil))
+  (let ((*verbose* verbose))
+    ;; Show message if verbose.
+    (verbose (format nil "Current directory: ~A~%" (getcwd)))
+    ;; Load Clakefile to execute tasks.
+    (let ((*tasks* nil))
+      (load-clakefile pathname)
+      (%execute-task (get-task target)))))

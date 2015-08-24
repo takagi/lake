@@ -49,6 +49,37 @@
 
 
 ;;;
+;;; Verbose
+;;;
+
+(subtest "verbose"
+
+  (let ((clake::*verbose* nil))
+    (is-print (clake::verbose "foo" nil *standard-output*)
+              "")
+    (is-print (clake::verbose "foo" t *standard-output*)
+              ""))
+
+  (let ((clake::*verbose* t))
+    (is-print (clake::verbose "foo" nil *standard-output*)
+              "foo")
+    (is-print (clake::verbose "foo" t *standard-output*)
+              (format nil "foo~%")))
+
+  (is-error (clake::verbose :foo nil *standard-output*)
+            type-error
+            "invlalid string.")
+
+  (is-error (clake::verbose :foo t *standard-output*)
+            type-error
+            "invlalid string.")
+
+  (is-error (clake::verbose "foo" nil :foo)
+            type-error
+            "invalid stream."))
+
+
+;;;
 ;;; Namespace
 ;;;
 
