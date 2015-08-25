@@ -23,7 +23,23 @@ Spawns a subprocess that runs the specified `command` given as a string. When `e
 
     ECHO string
 
-Write the given `string` into the standard output followed by a new line, provided for UNIX terminology convenience.
+Writes the given `string` into the standard output followed by a new line, provided for UNIX terminology convenience.
+
+### [Function] Execute
+
+    EXECUTE target
+
+Requests to execute a task specified with `target` as a string within another task. The name of the target task is resolved same as task dependency list in both relative and absolute manner.
+
+    (namespace "hello"
+
+      (task "foo" ()
+        (echo "foo")
+        (execute "bar"))
+
+      (task "bar" ()
+        (echo "bar"))
+
 
 ## Command line interface
 

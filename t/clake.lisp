@@ -474,6 +474,39 @@
   (is-print (sh "echo foo" :echo t)
             (format nil "echo foo~%foo~%")))
 
+(subtest "execute"
+
+  (let ((clake::*tasks* nil))
+    (namespace "hello"
+      (task "foo" ()
+        (echo "foo")
+        (execute "bar"))
+      (task "bar" ()
+        (echo "bar")))
+    (is-print (clake::%execute-task (clake::get-task "hello:foo"))
+              (format nil "foo~%bar~%")))
+
+  (let ((clake::*tasks* nil))
+    (namespace "hello"
+      (file "hello" ()
+        (echo "hello")
+        (execute "world"))
+      (file "world" ()
+        (echo "world")))
+    (is-print (clake::%execute-task (clake::get-task "hello:hello"))
+              (format nil "hello~%world~%")))
+
+  (let ((clake::*namespace* nil))
+    (is-error (execute :foo)
+              type-error
+              "invalid task name."))
+
+  (let ((clake::*tasks* nil)
+        (clake::*namespace* nil))
+    (is-error (execute "foo")
+              simple-error
+              "no task.")))
+
 
 ;;;
 ;;; Task manager

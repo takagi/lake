@@ -8,7 +8,8 @@
            :file
            :directory
            :sh
-           :echo)
+           :echo
+           :execute)
   (:shadow :directory)
   (:import-from :alexandria
                 :once-only)
@@ -176,7 +177,10 @@
 
 (defmacro task (name dependency &body action)
   `(register-task (make-task ,name *namespace* ',dependency
-                             #'(lambda () ,@action))))
+                             (eval
+                              `#'(lambda ()
+                                   (let ((*namespace* ',*namespace*))
+                                     ,@',action))))))
 
 
 ;;;
@@ -228,7 +232,10 @@
 
 (defmacro file (name dependency &body action)
   `(register-task (make-file-task ,name *namespace* ',dependency
-                                  #'(lambda () ,@action))))
+                                  (eval
+                                   `#'(lambda ()
+                                        (let ((*namespace* ',*namespace*))
+                                          ,@',action))))))
 
 
 ;;;
@@ -277,6 +284,13 @@
   (when echo
     (echo command))
   (run-program command :output t :error-output t))
+
+(defun execute (task-name)
+  (%execute task-name *namespace*))
+
+(defun %execute (task-name namespace)
+  (let ((task-name1 (resolve-task-name task-name namespace)))
+    (%execute-task (get-task task-name1))))
 
 
 ;;;
