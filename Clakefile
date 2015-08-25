@@ -1,7 +1,7 @@
 #|-*- mode:lisp -*-|#
 (in-package :cl-user)
 (defpackage :clake.user
-  (:use :cl :clake :cl-syntax :osicat)
+  (:use :cl :clake :cl-syntax)
   (:shadowing-import-from :clake
                           :directory))
 (in-package :clake.user)
@@ -40,3 +40,7 @@
 
   (file "hello.o" ("hello.c")
     (sh "gcc -c hello.c")))
+
+;; Use environment variable via roswell.
+(task "home" ()
+  (echo (ros:getenv "HOME")))

@@ -23,9 +23,7 @@
                :closer-mop
                :alexandria
                :split-sequence
-               :cl-syntax-interpol
-               :osicat
-               :uiop)
+               :cl-syntax-interpol)
   :components ((:module "src"
                 :components
                 ((:file "clake"))))

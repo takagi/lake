@@ -100,7 +100,7 @@ Here shows what and how Clakefile should express.
 
     (in-package :cl-user)
     (defpackage :clake.user
-      (:use :cl :clake :cl-syntax :osicat))
+      (:use :cl :clake :cl-syntax))
     (in-package :clake.user)
     
     (use-syntax :interpol)
@@ -158,6 +158,10 @@ Here shows what and how Clakefile should express.
 
     (task "bar" ()
       (echo "bar"))
+
+    ;; Use environment variable via roswell.
+    (task "home" ()
+      (echo (ros:getenv "HOME")))
 
 ## Task kinds
 

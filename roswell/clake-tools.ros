@@ -12,7 +12,7 @@ exec ros -Q -- $0 "$@"
         (write-line "#|-*- mode:lisp -*-|#" out)
         (write-line "(in-package :cl-user)" out)
         (write-line "(defpackage :clake.user" out)
-        (write-line "  (:use :cl :clake :cl-syntax :osicat)" out)
+        (write-line "  (:use :cl :clake :cl-syntax)" out)
         (write-line "  (:shadowing-import-from :clake" out)
         (write-line "                          :directory))" out)
         (write-line "(in-package :clake.user)" out)
