@@ -25,7 +25,7 @@ Spawns a subprocess that runs the specified `command` given as a string. When `e
 
 Writes the given `string` into the standard output followed by a new line, provided for UNIX terminology convenience.
 
-### [Function] Execute
+### [Function] execute
 
     EXECUTE target
 
