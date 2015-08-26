@@ -14,6 +14,10 @@
 (task "hello" ()
   (echo "do task hello!"))
 
+;; Call a task from another.
+(task "call-hello" ()
+  (execute "hello"))
+
 (defparameter cc "gcc")
 
 (file "hello.o" ("hello.c")
@@ -39,7 +43,10 @@
     (echo "name.bar"))
 
   (file "hello.o" ("hello.c")
-    (sh "gcc -c hello.c")))
+    (sh "gcc -c hello.c"))
+
+  (task "call-foo" ()
+    (execute "foo")))
 
 ;; Use environment variable via roswell.
 (task "home" ()
