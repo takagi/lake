@@ -198,13 +198,20 @@
             "invalid namespace."))
 
 (subtest "namespace macro"
+
   (let ((clake::*tasks* nil))
     (namespace "foo"
       (namespace "bar"
         (task "baz" ()
           (echo "foo.bar.baz")))
     (is-print (clake::%execute-task (clake::get-task "foo:bar:baz"))
-              (format nil "foo.bar.baz~%")))))
+              (format nil "foo.bar.baz~%"))))
+
+  (is-error (macroexpand '(namespace (format nil "foo")
+                            (task "bar" ()
+                              (echo "foo.bar"))))
+            type-error
+            "invalid namespace."))
 
 
 ;;;
@@ -311,7 +318,12 @@
     (task "foo" ()
       (echo "foo"))
     (is-print (clake::%execute-task (clake::get-task "foo"))
-              (format nil "foo~%"))))
+              (format nil "foo~%")))
+
+  (is-error (macroexpand '(task (format nil "foo") ()
+                            (echo "foo")))
+            type-error
+            "invalid task name."))
 
 
 ;;;
@@ -400,7 +412,7 @@
       (is-print (clake::%execute-task task1)
                 ""))))
 
-(subtest "file-task"
+(subtest "file macro"
 
   (with-test-directory
     (let ((clake::*tasks* nil))
@@ -408,7 +420,12 @@
         (echo "gcc -c hello.c"))
       (sh "touch hello.c")
       (is-print (clake::%execute-task (clake::get-task "hello.o"))
-                (format nil "gcc -c hello.c~%")))))
+                (format nil "gcc -c hello.c~%"))))
+
+  (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
+                            (echo "gcc -c hello.c")))
+            type-error
+            "invalid task name."))
 
 
 ;;;
@@ -456,14 +473,18 @@
       (is (and (directory-exists-p "dir") t)
           t))))
 
-(subtest "directory-task"
+(subtest "directory macro"
 
   (with-test-directory
     (let ((clake::*tasks* nil))
       (directory "dir")
       (clake::%execute-task (clake::get-task "dir"))
       (is (and (directory-exists-p "dir") t)
-          t))))
+          t)))
+
+  (is-error (macroexpand '(directory (format nil "dir")))
+            type-error
+            "invalid task name."))
 
 
 ;;;

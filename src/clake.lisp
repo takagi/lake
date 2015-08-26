@@ -56,6 +56,7 @@
 (defvar *namespace* nil)
 
 (defmacro namespace (namespace &body body)
+  (check-type namespace string)
   `(let ((*namespace* (cons ,namespace *namespace*)))
      ,@body))
 
@@ -176,6 +177,7 @@
   (values))
 
 (defmacro task (name dependency &body action)
+  (check-type name string)
   `(register-task (make-task ,name *namespace* ',dependency
                              (eval
                               `#'(lambda ()
@@ -231,6 +233,7 @@
   (values))
 
 (defmacro file (name dependency &body action)
+  (check-type name string)
   `(register-task (make-file-task ,name *namespace* ',dependency
                                   (eval
                                    `#'(lambda ()
@@ -270,6 +273,7 @@
   (values))
 
 (defmacro directory (name)
+  (check-type name string)
   `(register-task (make-directory-task ,name *namespace*)))
 
 
