@@ -26,8 +26,15 @@ exec ros -Q -- $0 "$@"
       (format t "~A~%" e)
       (ros:quit -1))))
 
+(defun print-help ()
+  (write-line "Usage: clake-tools [commmand]")
+  (write-line "Commands:")
+  (write-line "  init          Create an empty Clakefile with boilerplates")
+  (write-line "                in current directory."))
+
 (defun main (&optional $1 &rest argv)
   (declare (ignorable argv))
   (cond ((string= "init" $1)
          (init-clakefile))
-        (t (ros:quit 1))))
+        (t (print-help)
+           (ros:quit 1))))
