@@ -197,6 +197,22 @@
             simple-error
             "invalid namespace."))
 
+(subtest "task-name-namespace"
+
+  (is (clake::task-name-namespace "foo:bar:baz")
+      '("bar" "foo"))
+
+  (is-error (clake::task-name-namespace :foo)
+            type-error))
+
+(subtest "task-name-name"
+
+  (is (clake::task-name-name "foo:bar:baz")
+      "baz")
+
+  (is-error (clake::task-name-name :foo)
+            type-error))
+
 (subtest "namespace macro"
 
   (let ((clake::*tasks* nil))

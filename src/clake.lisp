@@ -91,7 +91,10 @@
       (subseq task-name 1)
       (format nil "~{~A:~}~A" (reverse namespace) task-name)))
 
-(defun task-name-leaf (task-name)
+(defun task-name-namespace (task-name)
+  (cdr (reverse (split-sequence #\: task-name))))
+
+(defun task-name-name (task-name)
   (last1 (split-sequence #\: task-name)))
 
 
@@ -109,6 +112,9 @@
 
 (defclass base-task ()
   ((name :initarg :name :reader task-name)))
+
+(defun task-namespace (task)
+  (task-name-namespace (task-name task)))
 
 (defun task= (task1 task2)
   ;; Now tasks with same names are not permitted.
@@ -141,7 +147,7 @@
     (make-instance 'task :name name1 :dependency dependency1 :action action)))
 
 (defun dependency-file-name (task-name)
-  (task-name-leaf task-name))
+  (task-name-name task-name))
 
 (defvar *history*)
 
@@ -171,7 +177,8 @@
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (funcall (task-action task))
+  (let ((*namespace* (task-namespace task)))
+    (funcall (task-action task)))
   ;; Show message if verbose.
   (verbose "done." t)
   (values))
@@ -179,10 +186,8 @@
 (defmacro task (name dependency &body action)
   (check-type name string)
   `(register-task (make-task ,name *namespace* ',dependency
-                             (eval
-                              `#'(lambda ()
-                                   (let ((*namespace* ',*namespace*))
-                                     ,@',action))))))
+                             #'(lambda ()
+                                 ,@action))))
 
 
 ;;;
@@ -203,7 +208,7 @@
                    :action action)))
 
 (defun file-task-file-name (file-task)
-  (task-name-leaf (task-name file-task)))
+  (task-name-name (task-name file-task)))
 
 (defun file-timestamp (file-name)
   (file-write-date file-name))
@@ -223,9 +228,10 @@
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task if required.
   (if (file-task-to-be-executed-p task)
-      ;; Execute the task.
       (progn
-        (funcall (task-action task))
+        ;; Execute the task.
+        (let ((*namespace* (task-namespace task)))
+          (funcall (task-action task)))
         ;; Show message if verbose.
         (verbose "done." t))
       ;; Skip the task to show message if verbose.
@@ -235,10 +241,8 @@
 (defmacro file (name dependency &body action)
   (check-type name string)
   `(register-task (make-file-task ,name *namespace* ',dependency
-                                  (eval
-                                   `#'(lambda ()
-                                        (let ((*namespace* ',*namespace*))
-                                          ,@',action))))))
+                                  #'(lambda ()
+                                      ,@action))))
 
 
 ;;;
@@ -254,7 +258,7 @@
     (make-instance 'directory-task :name name1)))
 
 (defun directory-task-directory-name (directory-task)
-  (task-name-leaf (task-name directory-task)))
+  (task-name-name (task-name directory-task)))
 
 (defun ensure-directory-pathspec (pathspec)
   (if (char/= (aref (reverse pathspec) 0) #\/)
