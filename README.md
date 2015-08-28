@@ -202,6 +202,7 @@ There are some kinds of "Task" representing a sequence of shell commands.
 ## Author
 
 * Rudolph Miller (chopsticks.tk.ppfm@gmail.com)
+* Masayuki Takagi (kamonama@gmial.com)
 
 ## Copyright
 
