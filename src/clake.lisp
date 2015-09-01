@@ -312,7 +312,7 @@
   (once-only (task)
     `(progn
        (check-type ,task base-task)
-       (setf ,tasks (remove ,task ,tasks :test #'task=))
+       (setf ,tasks (remove-duplicates ,tasks :test #'task=))
        (push ,task ,tasks))))
 
 (defun task-exists-p (name &optional (tasks *tasks*))
