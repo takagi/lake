@@ -122,7 +122,8 @@
            (task-name task2)))
 
 (defmethod print-object ((task base-task) stream)
-  (format stream "#<TASK ~S>" (task-name task)))
+  (print-unreadable-object (task stream :type t :identity t)
+    (princ (task-name task) stream)))
 
 (defmethod %execute-task ((task base-task))
   ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
