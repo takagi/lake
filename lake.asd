@@ -17,6 +17,7 @@
                :cl-syntax-annot
                :closer-mop
                :alexandria
+               :bordeaux-threads
                :split-sequence
                :cl-syntax-interpol)
   :components ((:module "src"

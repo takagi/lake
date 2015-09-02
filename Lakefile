@@ -51,3 +51,16 @@
 ;; Use environment variable via roswell.
 (task "home" ()
   (echo (ros:getenv "HOME")))
+
+;; For simultaneous execution.
+(task "multi" ("a" "b" "c")
+  (echo "multi"))
+
+(task "a" ("b")
+  (echo "a"))
+
+(task "b" ("c")
+  (echo "b"))
+
+(task "c" ()
+  (echo "c"))

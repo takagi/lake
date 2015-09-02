@@ -47,6 +47,33 @@
             type-error
             "invalid list."))
 
+(subtest "let%"
+  (let ((x 1))
+    (lake::let% ((x 2))
+      (is x 2))
+    (is x 1)))
+
+(subtest "dolist%"
+
+  (let (ret)
+    (lake::dolist% (x '(1 2 3) nil)
+      (push x ret))
+    (is (reverse ret)
+        '(1 2 3)))
+
+  (let (ret)
+    (lake::dolist% (x '(1 2 3) t)
+      (push x ret))
+    (is (sort ret #'<)
+        '(1 2 3)))
+
+  (let ((parallel t))
+    (let (ret)
+      (lake::dolist% (x '(1 2 3) parallel)
+        (push x ret))
+      (is (sort ret #'<)
+          '(1 2 3)))))
+
 
 ;;;
 ;;; Verbose
@@ -203,7 +230,8 @@
       '("bar" "foo"))
 
   (is-error (lake::task-name-namespace :foo)
-            type-error))
+            type-error
+            "invalid task name."))
 
 (subtest "task-name-name"
 
@@ -211,7 +239,8 @@
       "baz")
 
   (is-error (lake::task-name-name :foo)
-            type-error))
+            type-error
+            "invalid task name."))
 
 (subtest "namespace macro"
 
@@ -501,6 +530,34 @@
   (is-error (macroexpand '(directory (format nil "dir")))
             type-error
             "invalid task name."))
+
+
+;;;
+;;; Parallel
+;;;
+
+(subtest "parallel"
+
+  (lake::let% ((lake::*tasks* nil)
+               (lake::*parallel* t))
+    (let (ret)
+      (let ((task1 (lake::make-task "multi" nil '("a" "b" "c") #'noop))
+            (task2 (lake::make-task "a" nil '("b")
+                                    #'(lambda ()
+                                        (push 1 ret))))
+            (task3 (lake::make-task "b" nil '("c")
+                                    #'(lambda ()
+                                        (push 2 ret))))
+            (task4 (lake::make-task "c" nil nil
+                                    #'(lambda ()
+                                        (push 3 ret)))))
+        (lake::register-task task1)
+        (lake::register-task task2)
+        (lake::register-task task3)
+        (lake::register-task task4)
+        (lake::%execute-task task1)
+        (is (sort ret #'<)
+            '(1 2 2 3 3 3))))))
 
 
 ;;;

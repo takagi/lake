@@ -28,6 +28,53 @@
 (defun last1 (list)
   (car (last list)))
 
+(defmacro let% (bindings &body body)
+  (if bindings
+      (destructuring-bind ((var value) . rest) bindings
+        (alexandria:with-gensyms (orig)
+          `(let ((,orig ,var))
+             (setf ,var ,value)
+             (unwind-protect
+                  (let% (,@rest)
+                    ,@body)
+               (setf ,var ,orig)))))
+      `(progn ,@body)))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+
+  (defun dolist%-sequential-form (var list body)
+    `(dolist (,var ,list)
+       ,@body))
+
+  (defun dolist%-parallel-form (var list body)
+    `(let ((threads
+             (mapcar
+               #'(lambda (,var)
+                   (let ((parent (bt:current-thread)))
+                     (bt:make-thread
+                       #'(lambda ()
+                           (handler-case
+                               (progn ,@body)
+                             (error (e)
+                               (bt:interrupt-thread parent
+                                 #'(lambda ()
+                                     (error e))))))
+                       :initial-bindings
+                       `((*standard-output* . ,*standard-output*)
+                         (*error-output* . ,*error-output*)))))
+               ,list)))
+       (loop for thread in threads
+          do (bt:join-thread thread)))))
+
+(defmacro dolist% ((var list parallel) &body body)
+  (cond
+    ((eq parallel t) (dolist%-parallel-form var list body))
+    ((eq parallel nil) (dolist%-sequential-form var list body))
+    (t (once-only (list)
+         `(if (not ,parallel)
+              ,(dolist%-sequential-form var list body)
+              ,(dolist%-parallel-form var list body))))))
+
 
 ;;;
 ;;; Verbose
@@ -123,8 +170,8 @@
     (princ (task-name task) stream)))
 
 (defmethod %execute-task ((task base-task))
-  ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
-  ;; mismatch.
+  (when *parallel*
+    (verbose "Execute in parallel." t))
   (execute-task task))
 
 
@@ -150,26 +197,31 @@
 (defvar *history*)
 
 (defmethod %execute-task ((task task))
+  (when *parallel*
+    (verbose "Execute in parallel." t))
   (let ((*history* nil))
     (execute-task task)))
 
+(defvar *parallel* nil)
+
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
-  (let ((*history* (cons task *history*)))
-    (loop for task-name in (task-dependency task)
-       do (cond
-            ((task-exists-p task-name)
-             (let ((task1 (get-task task-name)))
-               ;; Error if has circular dependency.
-               (unless (not (member task1 *history* :test #'task=))
-                 (error "The task ~S has circular dependency."
-                        (task-name (last1 *history*))))
-               ;; Execute a dependency task.
-               (execute-task task1)))
-            ((file-exists-p (dependency-file-name task-name))
-             ;; Noop.
-             nil)
-            (t (error "Don't know how to build task ~S." task-name))))))
+  (let ((history (cons task *history*)))
+    (dolist% (task-name (task-dependency task) *parallel*)
+      (cond
+        ((task-exists-p task-name)
+         (let ((task1 (get-task task-name)))
+           ;; Error if has circular dependency.
+           (unless (not (member task1 history :test #'task=))
+             (error "The task ~S has circular dependency."
+                    (task-name (last1 history))))
+           ;; Execute a dependency task.
+           (let ((*history* history))
+             (execute-task task1))))
+        ((file-exists-p (dependency-file-name task-name))
+         ;; Noop.
+         nil)
+        (t (error "Don't know how to build task ~S." task-name))))))
 
 (defmethod execute-task ((task task))
   ;; Show message if verbose.
@@ -336,11 +388,13 @@
 
 (defun lake (&key (target "default")
                   (pathname (get-lakefile-pathname))
-                  (verbose nil))
-  (let ((*verbose* verbose))
+                  parallel
+                  verbose)
+  (let% ((*parallel* parallel)
+         (*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to execute tasks.
-    (let ((*tasks* nil))
+    (let% ((*tasks* nil))
       (load-lakefile pathname)
       (%execute-task (get-task target)))))
