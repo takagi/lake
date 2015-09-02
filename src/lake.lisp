@@ -11,9 +11,13 @@
            :execute)
   (:shadow :directory)
   (:import-from :alexandria
+                :with-gensyms
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
+  (:import-from :bordeaux-threads
+                :make-thread
+                :join-thread)
   (:import-from :uiop
                 :getcwd
                 :run-program
@@ -28,52 +32,24 @@
 (defun last1 (list)
   (car (last list)))
 
-(defmacro let% (bindings &body body)
-  (if bindings
-      (destructuring-bind ((var value) . rest) bindings
-        (alexandria:with-gensyms (orig)
-          `(let ((,orig ,var))
-             (setf ,var ,value)
-             (unwind-protect
-                  (let% (,@rest)
-                    ,@body)
-               (setf ,var ,orig)))))
-      `(progn ,@body)))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-
-  (defun dolist%-sequential-form (var list body)
-    `(dolist (,var ,list)
-       ,@body))
-
-  (defun dolist%-parallel-form (var list body)
-    `(let ((threads
-             (mapcar
-               #'(lambda (,var)
-                   (let ((parent (bt:current-thread)))
-                     (bt:make-thread
-                       #'(lambda ()
-                           (handler-case
-                               (progn ,@body)
-                             (error (e)
-                               (bt:interrupt-thread parent
-                                 #'(lambda ()
-                                     (error e))))))
-                       :initial-bindings
-                       `((*standard-output* . ,*standard-output*)
-                         (*error-output* . ,*error-output*)))))
-               ,list)))
-       (loop for thread in threads
-          do (bt:join-thread thread)))))
-
 (defmacro dolist% ((var list parallel) &body body)
-  (cond
-    ((eq parallel t) (dolist%-parallel-form var list body))
-    ((eq parallel nil) (dolist%-sequential-form var list body))
-    (t (once-only (list)
-         `(if (not ,parallel)
-              ,(dolist%-sequential-form var list body)
-              ,(dolist%-parallel-form var list body))))))
+  `(flet ((aux (,var)
+            ,@body))
+     (if (not ,parallel)
+         (dolist (,var ,list)
+           (funcall #'aux ,var))
+         (let ((threads
+                 (mapcar
+                   #'(lambda (,var)
+                       (make-thread
+                         #'(lambda ()
+                             (funcall #'aux ,var))
+                         :initial-bindings
+                         `((*standard-output* . ,*standard-output*)
+                           (*error-output* . ,*error-output*))))
+                   ,list)))
+           (loop for thread in threads
+              do (join-thread thread))))))
 
 
 ;;;
@@ -196,27 +172,37 @@
 
 (defvar *history*)
 
+;; To avoid curious behavior in *TASKS* propergation across threads.
+(defvar *tasks-in-progress*)
+
 (defmethod %execute-task ((task task))
   (when *parallel*
     (verbose "Execute in parallel." t))
-  (let ((*history* nil))
+  (let ((*history* nil)
+        (*tasks-in-progress* *tasks*))
     (execute-task task)))
 
 (defvar *parallel* nil)
 
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
-  (let ((history (cons task *history*)))
+  (let ((history (cons task *history*))
+        (tasks *tasks-in-progress*)
+        (parallel *parallel*)
+        (verbose *verbose*))
     (dolist% (task-name (task-dependency task) *parallel*)
       (cond
-        ((task-exists-p task-name)
-         (let ((task1 (get-task task-name)))
+        ((task-exists-p task-name tasks)
+         (let ((task1 (get-task task-name tasks)))
            ;; Error if has circular dependency.
            (unless (not (member task1 history :test #'task=))
              (error "The task ~S has circular dependency."
                     (task-name (last1 history))))
            ;; Execute a dependency task.
-           (let ((*history* history))
+           (let ((*history* history)
+                 (*tasks-in-progress* tasks)
+                 (*parallel* parallel)
+                 (*verbose* verbose))
              (execute-task task1))))
         ((file-exists-p (dependency-file-name task-name))
          ;; Noop.
@@ -390,11 +376,11 @@
                   (pathname (get-lakefile-pathname))
                   parallel
                   verbose)
-  (let% ((*parallel* parallel)
-         (*verbose* verbose))
+  (let ((*parallel* parallel)
+        (*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to execute tasks.
-    (let% ((*tasks* nil))
+    (let ((*tasks* nil))
       (load-lakefile pathname)
       (%execute-task (get-task target)))))

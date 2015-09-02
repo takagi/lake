@@ -47,32 +47,35 @@
             type-error
             "invalid list."))
 
-(subtest "let%"
-  (let ((x 1))
-    (lake::let% ((x 2))
-      (is x 2))
-    (is x 1)))
-
 (subtest "dolist%"
 
-  (let (ret)
-    (lake::dolist% (x '(1 2 3) nil)
-      (push x ret))
-    (is (reverse ret)
-        '(1 2 3)))
-
-  (let (ret)
-    (lake::dolist% (x '(1 2 3) t)
-      (push x ret))
-    (is (sort ret #'<)
-        '(1 2 3)))
-
-  (let ((parallel t))
+  (locally
+    #+sbcl
+    (declare (sb-ext:muffle-conditions sb-ext:compiler-note))
     (let (ret)
-      (lake::dolist% (x '(1 2 3) parallel)
+      (lake::dolist% (x '(1 2 3) nil)
+        (push x ret))
+      (is (reverse ret)
+          '(1 2 3))))
+
+  (locally
+    #+sbcl
+    (declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+    (let (ret)
+      (lake::dolist% (x '(1 2 3) t)
         (push x ret))
       (is (sort ret #'<)
-          '(1 2 3)))))
+          '(1 2 3))))
+
+  (locally
+    #+sbcl
+    (declare (sb-ext:muffle-conditions sb-ext:compiler-note))
+    (let ((parallel t))
+      (let (ret)
+        (lake::dolist% (x '(1 2 3) parallel)
+          (push x ret))
+        (is (sort ret #'<)
+            '(1 2 3))))))
 
 
 ;;;
@@ -538,8 +541,8 @@
 
 (subtest "parallel"
 
-  (lake::let% ((lake::*tasks* nil)
-               (lake::*parallel* t))
+  (let ((lake::*tasks* nil)
+        (lake::*parallel* t))
     (let (ret)
       (let ((task1 (lake::make-task "multi" nil '("a" "b" "c") #'noop))
             (task2 (lake::make-task "a" nil '("b")
