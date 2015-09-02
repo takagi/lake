@@ -1,8 +1,7 @@
 (in-package :cl-user)
-(defpackage clake
-  (:use :cl
-        :annot.doc)
-  (:export :clake
+(defpackage lake
+  (:use :cl)
+  (:export :lake
            :namespace
            :task
            :file
@@ -19,9 +18,7 @@
                 :getcwd
                 :run-program
                 :file-exists-p))
-(in-package :clake)
-
-(syntax:use-syntax :annot)
+(in-package :lake)
 
 
 ;;;
@@ -327,23 +324,23 @@
 
 
 ;;;
-;;; clake
+;;; lake
 ;;;
 
-(defun get-clakefile-pathname ()
-  (or (probe-file (merge-pathnames "Clakefile" (getcwd)))
-      (error "No Clakefile found at ~A." (getcwd))))
+(defun get-lakefile-pathname ()
+  (or (probe-file (merge-pathnames "Lakefile" (getcwd)))
+      (error "No Lakefile found at ~A." (getcwd))))
 
-(defun load-clakefile (pathname)
+(defun load-lakefile (pathname)
   (load pathname))
 
-(defun clake (&key (target "default")
-                   (pathname (get-clakefile-pathname))
-                   (verbose nil))
+(defun lake (&key (target "default")
+                  (pathname (get-lakefile-pathname))
+                  (verbose nil))
   (let ((*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
-    ;; Load Clakefile to execute tasks.
+    ;; Load Lakefile to execute tasks.
     (let ((*tasks* nil))
-      (load-clakefile pathname)
+      (load-lakefile pathname)
       (%execute-task (get-task target)))))

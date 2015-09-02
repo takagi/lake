@@ -1,23 +1,23 @@
 #|
-  This file is a part of clake project.
+  This file is a part of lake project.
   Copyright (c) 2015 Rudolph Miller (chopsticks.tk.ppfm@gmail.com)
 |#
 
 (in-package :cl-user)
-(defpackage clake-test-asd
+(defpackage lake-test-asd
   (:use :cl :asdf))
-(in-package :clake-test-asd)
+(in-package :lake-test-asd)
 
-(defsystem clake-test
+(defsystem lake-test
   :author "Rudolph Miller"
   :license "MIT"
-  :homepage "https://github.com/Rudolph-Miller/clake"
-  :depends-on (:clake
+  :homepage "https://github.com/takagi/lake"
+  :depends-on (:lake
                :prove)
   :components ((:module "t"
                 :components
-                ((:test-file "clake"))))
-  :description "Test system for clake."
+                ((:test-file "lake"))))
+  :description "Test system for lake."
 
   :defsystem-depends-on (:prove-asdf)
   :perform (test-op :after (op c)
