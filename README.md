@@ -73,9 +73,9 @@ Lake provides the following forms to define tasks and namespaces in `Lakefile`:
 
 ### Task
 
-    TASK task-name dependency-list form*
+    TASK task-name dependency-list [description] form*
 
-`task` represents a sequence of operations to accomplish some task. `task-name` is a string that specifies the target task by its name. `dependency-list` is a list of tasks names on which the target task depends. The dependency task names are given in both relative and absolute manner, which begins with a colon `:`. `form`s can be any Common Lisp forms.
+`task` represents a sequence of operations to accomplish some task. `task-name` is a string that specifies the target task by its name. `dependency-list` is a list of task names on which the target task depends. The dependency task names are given in both relative and absolute manner, which begins with a colon `:`. `description` is a doc string. `form`s can be any Common Lisp forms.
 
     $ cat Lakefile
     ...
@@ -97,13 +97,14 @@ Lake provides the following forms to define tasks and namespaces in `Lakefile`:
 
 ### File
 
-    FILE file-name dependency-list form*
+    FILE file-name dependency-list [description] form*
 
-`file` task represents a sequence of operations as well as `task` except that it is executed only when the target file is out of date. `file-name` is a string that specifies the target file's name. `dependency-list` is a list of tasks or file names on which the target file depends. The dependency task/file names are given in both relative and absolute manner, which begins with a colon `:`. `form`s can be any Common Lisp forms.
+`file` task represents a sequence of operations as well as `task` except that it is executed only when the target file is out of date. `file-name` is a string that specifies the target file's name. `dependency-list` is a list of tasks or file names on which the target file depends. The dependency task/file names are given in both relative and absolute manner, which begins with a colon `:`. `description` is a doc string. `form`s can be any Common Lisp forms.
 
     $ cat Lakefile
     ...
     (file "hello" ("hello.c")
+      "Compile hello from C source code."
       (sh "gcc -o hello hello.c"))
 
     $ lake hello
@@ -112,9 +113,9 @@ Lake provides the following forms to define tasks and namespaces in `Lakefile`:
 
 ### Directory
 
-    DIRECTORY directory-name
+    DIRECTORY directory-name [description]
 
-`directory` task represents a task that ensures a directory with name of `directory-name` exists. `directory` task does not depend on other tasks.
+`directory` task represents a task that ensures a directory with name of `directory-name` exists. `description` is a doc string. `directory` task does not depend on other tasks.
 
     $ cat Lakefile
     ...
@@ -184,6 +185,14 @@ Executes a task specified with `target` as a string within another. The name of 
     (task "ls" ()
       (sh "ls -l"))
 
+### [Function] display-tasks
+
+    DISPLAY-TASKS &key pathname verbose
+
+Displays the tasks with descriptions in a Lakefile specified with `pathname`. Not nil `verbose` provides verbose mode. If `pathname` is not given, a file of name `Lakefile` in the current direcotry is searched for. You should be aware that where the Common Lisp process' current directory is.
+
+    (display-tasks)
+
 ## Command Line Interface
 
 ### lake
@@ -200,6 +209,8 @@ Lake provides its command line interface as a roswell script.
             Use FILE as a Lakefile.
         -h
             Print usage.
+        -T
+            Display the tasks with descriptions, then exit.
         -v
             Verbose mode.
 

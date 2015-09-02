@@ -2,6 +2,7 @@
 (defpackage lake
   (:use :cl)
   (:export :lake
+           :display-tasks
            :namespace
            :task
            :file
@@ -108,7 +109,8 @@
 ;;;
 
 (defclass base-task ()
-  ((name :initarg :name :reader task-name)))
+  ((name :initarg :name :reader task-name)
+   (description :initarg :description :reader task-description)))
 
 (defun task-namespace (task)
   (task-name-namespace (task-name task)))
@@ -136,13 +138,17 @@
   ((dependency :initarg :dependency :reader task-dependency)
    (action :initarg :action :reader task-action)))
 
-(defun make-task (name namespace dependency action)
+(defun make-task (name namespace dependency desc action)
   (check-type action function)
+  (check-type desc (or string null))
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
                           (resolve-dependency-task-name task-name namespace))))
-    (make-instance 'task :name name1 :dependency dependency1 :action action)))
+    (make-instance 'task :name name1
+                         :dependency dependency1
+                         :description desc
+                         :action action)))
 
 (defun dependency-file-name (task-name)
   (task-name-name task-name))
@@ -181,11 +187,23 @@
   (verbose "done." t)
   (values))
 
-(defmacro task (name dependency &body action)
+(defun parse-body (forms)
+  (flet ((desc-p (form rest)
+           (and (stringp form)
+                rest)))
+    (if forms
+        (destructuring-bind (form1 . rest) forms
+            (if (desc-p form1 rest)
+                (values rest form1)
+                (values forms nil)))
+        (values nil nil))))
+
+(defmacro task (name dependency &body body)
   (check-type name string)
-  `(register-task (make-task ,name *namespace* ',dependency
-                             #'(lambda ()
-                                 ,@action))))
+  (multiple-value-bind (forms desc) (parse-body body)
+    `(register-task (make-task ,name *namespace* ',dependency ,desc
+                               #'(lambda ()
+                                   ,@forms)))))
 
 
 ;;;
@@ -194,16 +212,17 @@
 
 (defclass file-task (task) ())
 
-(defun make-file-task (name namespace dependency action)
+(defun make-file-task (name namespace dependency desc action)
   (check-type action function)
+  (check-type desc (or string null))
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
                           (resolve-dependency-task-name task-name namespace))))
-    (make-instance 'file-task
-                   :name name1
-                   :dependency dependency1
-                   :action action)))
+    (make-instance 'file-task :name name1
+                              :dependency dependency1
+                              :description desc
+                              :action action)))
 
 (defun file-task-file-name (file-task)
   (task-name-name (task-name file-task)))
@@ -236,11 +255,12 @@
       (verbose "skipped." t))
   (values))
 
-(defmacro file (name dependency &body action)
+(defmacro file (name dependency &body body)
   (check-type name string)
-  `(register-task (make-file-task ,name *namespace* ',dependency
-                                  #'(lambda ()
-                                      ,@action))))
+  (multiple-value-bind (forms desc) (parse-body body)
+    `(register-task (make-file-task ,name *namespace* ',dependency ,desc
+                                    #'(lambda ()
+                                        ,@forms)))))
 
 
 ;;;
@@ -249,11 +269,12 @@
 
 (defclass directory-task (base-task) ())
 
-(defun make-directory-task (name namespace)
+(defun make-directory-task (name namespace desc)
+  (check-type desc (or string null))
   (unless (valid-task-name-p name)
     (error "The value ~S is an invalid task name." name))
   (let ((name1 (resolve-task-name name namespace)))
-    (make-instance 'directory-task :name name1)))
+    (make-instance 'directory-task :name name1 :description desc)))
 
 (defun directory-task-directory-name (directory-task)
   (task-name-name (task-name directory-task)))
@@ -274,9 +295,10 @@
   (verbose "done." t)
   (values))
 
-(defmacro directory (name)
+(defmacro directory (name &optional desc)
   (check-type name string)
-  `(register-task (make-directory-task ,name *namespace*)))
+  (check-type desc (or string null))
+  `(register-task (make-directory-task ,name *namespace* ,desc)))
 
 
 ;;;
@@ -344,3 +366,28 @@
     (let ((*tasks* nil))
       (load-lakefile pathname)
       (%execute-task (get-task target)))))
+
+(defun tasks-max-width (tasks)
+  (loop for task in tasks
+     when (task-description task)
+     maximize (length (task-name task))))
+
+(defun %display-tasks (tasks)
+  (let ((width (tasks-max-width tasks)))
+    (loop for task in tasks
+       when (task-description task)
+       do (let ((padlen (- width (length (task-name task)))))
+            (format t "lake ~A~v@{ ~}  # ~A~%"
+                    (task-name task)
+                    padlen
+                    (task-description task))))))
+
+(defun display-tasks (&key (pathname (get-lakefile-pathname))
+                           (verbose nil))
+  (let ((*verbose* verbose))
+    ;; Show message if verbose.
+    (verbose (format nil "Current directory: ~A~%" (getcwd)))
+    ;; Load Lakefile to display tasks.
+    (let ((*tasks*))
+      (load-lakefile pathname)
+      (%display-tasks (reverse *tasks*)))))
