@@ -206,17 +206,19 @@
 
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
-  (let ((history (cons task *history*)))
+  (let ((history (cons task *history*))
+        (tasks *tasks*))
     (dolist% (task-name (task-dependency task) *parallel*)
       (cond
-        ((task-exists-p task-name)
-         (let ((task1 (get-task task-name)))
+        ((task-exists-p task-name tasks)
+         (let ((task1 (get-task task-name tasks)))
            ;; Error if has circular dependency.
            (unless (not (member task1 history :test #'task=))
              (error "The task ~S has circular dependency."
                     (task-name (last1 history))))
            ;; Execute a dependency task.
-           (let ((*history* history))
+           (let ((*history* history)
+                 (*tasks* tasks))
              (execute-task task1))))
         ((file-exists-p (dependency-file-name task-name))
          ;; Noop.
@@ -395,6 +397,6 @@
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to execute tasks.
-    (let% ((*tasks* nil))
+    (let ((*tasks* nil))
       (load-lakefile pathname)
       (%execute-task (get-task target)))))
