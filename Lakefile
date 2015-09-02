@@ -1,10 +1,10 @@
 #|-*- mode:lisp -*-|#
 (in-package :cl-user)
-(defpackage :clake.user
-  (:use :cl :clake :cl-syntax)
-  (:shadowing-import-from :clake
+(defpackage :lake.user
+  (:use :cl :lake :cl-syntax)
+  (:shadowing-import-from :lake
                           :directory))
-(in-package :clake.user)
+(in-package :lake.user)
 
 (use-syntax :interpol)
 

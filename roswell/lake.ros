@@ -4,12 +4,12 @@
 exec ros -Q -- $0 "$@"
 |#
 
-(ql:quickload :clake :silent t)
+(ql:quickload :lake :silent t)
 
 (defun print-help ()
-  (write-line "Usage: clake [options] [target] ...")
+  (write-line "Usage: lake [options] [target] ...")
   (write-line "Options:")
-  (write-line "  -f FILE       Use FILE as a clakefile.")
+  (write-line "  -f FILE       Use FILE as a lakefile.")
   (write-line "  -h            Print this message and exit.")
   (write-line "  -v            Verbose mode."))
 
@@ -31,8 +31,8 @@ exec ros -Q -- $0 "$@"
                             `(:pathname ,pathname)))))
           (if targets
               (loop for target in targets
-                 do (apply #'clake:clake :target target params))
-              (apply #'clake:clake params))))
+                 do (apply #'lake:lake :target target params))
+              (apply #'lake:lake params))))
     (error (e)
       (format t "~A~%" e)
       (ros:quit -1))))

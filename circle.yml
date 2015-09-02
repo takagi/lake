@@ -27,5 +27,5 @@ test:
     - ros run -- --version
     - ros -s prove -s cl-coveralls
           -e '(or (coveralls:with-coveralls (:exclude (list "t" "quicklisp"))
-                    (prove:run :clake-test))
+                    (prove:run :lake-test))
                   (uiop:quit -1))'

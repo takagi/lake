@@ -4,18 +4,18 @@
 exec ros -Q -- $0 "$@"
 |#
 
-(defun init-clakefile ()
+(defun init-lakefile ()
   (handler-case
-      (with-open-file (out "Clakefile" :direction :output
-                                       :if-exists :error
-                                       :if-does-not-exist :create)
+      (with-open-file (out "Lakefile" :direction :output
+                                      :if-exists :error
+                                      :if-does-not-exist :create)
         (write-line "#|-*- mode:lisp -*-|#" out)
         (write-line "(in-package :cl-user)" out)
-        (write-line "(defpackage :clake.user" out)
-        (write-line "  (:use :cl :clake :cl-syntax)" out)
-        (write-line "  (:shadowing-import-from :clake" out)
+        (write-line "(defpackage :lake.user" out)
+        (write-line "  (:use :cl :lake :cl-syntax)" out)
+        (write-line "  (:shadowing-import-from :lake" out)
         (write-line "                          :directory))" out)
-        (write-line "(in-package :clake.user)" out)
+        (write-line "(in-package :lake.user)" out)
         (write-line "" out)
         (write-line "(use-syntax :interpol)" out)
         (write-line "" out)
@@ -27,14 +27,14 @@ exec ros -Q -- $0 "$@"
       (ros:quit -1))))
 
 (defun print-help ()
-  (write-line "Usage: clake-tools [commmand]")
+  (write-line "Usage: lake-tools [commmand]")
   (write-line "Commands:")
-  (write-line "  init          Create an empty Clakefile with boilerplates")
+  (write-line "  init          Create an empty Lakefile with boilerplates")
   (write-line "                in current directory."))
 
 (defun main (&optional $1 &rest argv)
   (declare (ignorable argv))
   (cond ((string= "init" $1)
-         (init-clakefile))
+         (init-lakefile))
         (t (print-help)
            (ros:quit 1))))
