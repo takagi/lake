@@ -147,7 +147,7 @@
 ;;; Generic task operations
 ;;;
 
-(defgeneric execute-task (task))
+(defgeneric execute-task (task tasks))
 
 
 ;;;
@@ -172,7 +172,7 @@
 (defmethod %execute-task ((task base-task))
   (when *parallel*
     (verbose "Execute in parallel." t))
-  (execute-task task))
+  (execute-task task *tasks*))
 
 
 ;;;
@@ -200,30 +200,32 @@
   (when *parallel*
     (verbose "Execute in parallel." t))
   (let ((*history* nil))
-    (execute-task task)))
+    (execute-task task *tasks*)))
 
 (defvar *parallel* nil)
 
-(defmethod execute-task :before ((task task))
+(defmethod execute-task :before ((task task) tasks)
+  (dolist (task tasks)
+    (check-type task base-task))
   ;; Execute dependency tasks.
   (let ((history (cons task *history*)))
     (dolist% (task-name (task-dependency task) *parallel*)
       (cond
-        ((task-exists-p task-name)
-         (let ((task1 (get-task task-name)))
+        ((task-exists-p task-name tasks)
+         (let ((task1 (get-task task-name tasks)))
            ;; Error if has circular dependency.
            (unless (not (member task1 history :test #'task=))
              (error "The task ~S has circular dependency."
                     (task-name (last1 history))))
            ;; Execute a dependency task.
            (let ((*history* history))
-             (execute-task task1))))
+             (execute-task task1 tasks))))
         ((file-exists-p (dependency-file-name task-name))
          ;; Noop.
          nil)
         (t (error "Don't know how to build task ~S." task-name))))))
 
-(defmethod execute-task ((task task))
+(defmethod execute-task ((task task) tasks)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
@@ -273,7 +275,7 @@
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((task file-task))
+(defmethod execute-task ((task file-task) tasks)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task if required.
@@ -315,7 +317,7 @@
       (concatenate 'string pathspec "/")
       pathspec))
 
-(defmethod execute-task ((directory-task directory-task))
+(defmethod execute-task ((directory-task directory-task) tasks)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name directory-task)))
   ;; Execute the task.
