@@ -9,7 +9,7 @@
 (in-package :lake-test-asd)
 
 (defsystem lake-test
-  :author "Rudolph Miller"
+  :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
   :depends-on (:lake

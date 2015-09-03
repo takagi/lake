@@ -10,13 +10,10 @@
 
 (defsystem lake
   :version "0.1"
-  :author "Rudolph Miller"
+  :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
-  :depends-on (:cl-syntax
-               :cl-syntax-annot
-               :closer-mop
-               :alexandria
+  :depends-on (:alexandria
                :split-sequence
                :cl-syntax-interpol)
   :components ((:module "src"
