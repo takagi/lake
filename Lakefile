@@ -10,20 +10,21 @@
 
 (task "default" ("hello" "hello.o" "dir" "name:foo"))
 
-;; A task that print hello.
 (task "hello" ()
+  "A task that print hello."
   (echo "do task hello!"))
 
-;; Call a task from another.
 (task "call-hello" ()
+  ;; Call a task from another.
   (execute "hello"))
 
 (defparameter cc "gcc")
 
 (file "hello.o" ("hello.c")
+  "A file task that compiles a C source file."
   (sh #?"${cc} -c hello.c"))
 
-(directory "dir")
+(directory "dir" "Create a directory.")
 
 (directory "foo")                       ; superseded by the next task.
 
@@ -37,6 +38,7 @@
 (namespace "name"
 
   (task "foo" ("bar")
+    "A task in \"name\" namespace."
     (echo "name.foo"))
 
   (task "bar" ()
@@ -48,6 +50,6 @@
   (task "call-foo" ()
     (execute "foo")))
 
-;; Use environment variable via roswell.
 (task "home" ()
+  ;; Use environment variable via roswell.
   (echo (ros:getenv "HOME")))

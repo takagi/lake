@@ -11,7 +11,13 @@ exec ros -Q -- $0 "$@"
   (write-line "Options:")
   (write-line "  -f FILE       Use FILE as a lakefile.")
   (write-line "  -h            Print this message and exit.")
+  (write-line "  -T            Display the tasks with descriptions, then exit.")
   (write-line "  -v            Verbose mode."))
+
+(defun print-tasks (pathname)
+  (if pathname
+      (lake:display-tasks :pathname pathname)
+      (lake:display-tasks)))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
@@ -23,6 +29,8 @@ exec ros -Q -- $0 "$@"
                         (setf f-mode nil))
                 ((string= "-f" arg) (setf f-mode t))
                 ((string= "-h" arg) (print-help)
+                                    (ros:quit 1))
+                ((string= "-T" arg) (print-tasks pathname)
                                     (ros:quit 1))
                 ((string= "-v" arg) (setf v-mode t))
                 (t (push arg targets))))
