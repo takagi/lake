@@ -18,7 +18,20 @@
                :cl-syntax-interpol)
   :components ((:module "src"
                 :components
-                ((:file "lake"))))
+                ((:file "package")
+                 (:file "utilities")
+                 (:file "namespace")
+                 (:file "runner")
+                 (:file "taskman")
+                 (:module "tasks"
+                  :components ((:file "generics")
+                               (:file "base")
+                               (:file "task")
+                               (:file "file")
+                               (:file "directory"))
+                  :serial t)
+                 (:file "lake"))))
+  :serial t
   :description "Lake is a GNU make like build utility in Common Lisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames
