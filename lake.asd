@@ -20,6 +20,7 @@
                 :components
                 ((:file "package")
                  (:file "utilities")
+                 (:file "verbose")
                  (:file "namespace")
                  (:file "runner")
                  (:file "taskman")
