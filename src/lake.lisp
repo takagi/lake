@@ -13,6 +13,7 @@
            :*ssh-user*
            :*ssh-identity*
            :ssh
+           :scp
            :execute)
   (:shadow :directory)
   (:import-from :alexandria
@@ -340,6 +341,29 @@
   (let ((command1 (format nil +ssh-control-string+
                           *ssh-identity* *ssh-user* *ssh-host* command)))
     (sh command1 :echo echo)))
+
+
+;;;
+;;; SCP
+;;;
+
+(defun scp-filepath (pathspec place)
+  (check-type pathspec (or pathname string))
+  (unless (member place '(:local :remote))
+    (error "The value ~S is not :local nor :remote." place))
+  (if (eq place :remote)
+      (format nil "~@[~A@~]~A:~A" *ssh-user* *ssh-host* pathspec)
+      (princ-to-string pathspec)))
+
+(defparameter +scp-control-string+
+  "scp ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~A ~A")
+
+(defun scp (from-place pathspec1 to-place pathspec2 &key echo)
+  (let ((path1 (scp-filepath pathspec1 from-place))
+        (path2 (scp-filepath pathspec2 to-place)))
+    (let ((command (format nil +scp-control-string+
+                           *ssh-identity* path1 path2)))
+      (sh command :echo echo))))
 
 
 ;;;

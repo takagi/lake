@@ -164,7 +164,7 @@ Writes the given `string` into the standard output followed by a new line, provi
 
     SH command &key echo
 
-Spawns a subprocess that runs the specified `command` given as a string. When `echo` is not `nil`, prints `command` to the standard output before runs it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
+Spawns a subprocess that runs the specified `command` given as a string. When `echo` is not `nil`, prints `command` to the standard output before running it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
 Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressions to shell scripts.
 
     (defparameter cc "gcc")
@@ -176,10 +176,10 @@ Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressi
 
     SSH command &key echo
 
-Spawns a subprocess that runs the specified `command`, given as a string, on a remote host using `ssh(1)`. `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `ssh` command published to the standard output before runs it.
+Spawns a subprocess that runs the specified `command`, given as a string, on a remote host using `ssh(1)`. `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `ssh` command published to the standard output before running it.
 
-    (setf *ssh-host* "localhost")
-    (setf *ssh-user* "`whoami`")
+    (setf *ssh-host* "remotehost")
+    (setf *ssh-user* "user")
     (task "hello-via-ssh" ()
       (ssh "echo Hello World!"))
 
@@ -202,6 +202,20 @@ Instead, the next works as intended. Anyway, the former style with `setf` would 
 ### [Special Variable] \*ssh-host\*, \*ssh-user\*, \*ssh-identity\*
 
 These special variables are used to establish a secure connection using `ssh` function. The default value of `*ssh-host*` is unbound so it should be always bound properly when using secure connections. The default value of `*ssh-user*` is `nil`, for giving optional user name. The default value of `*ssh-identity*` is `nil`, for giving optional identity file to prove his/her identity to the remote machine.
+
+### [Function] scp
+
+    SCP from-place pathspec1 to-place pathspec2 &key echo
+
+Copies files between hosts on a network using `scp(1)`. `from-place`, which must be `:local` or `:remote`, specifies if `pathspec1` is a file path on local host or remote host respectively. `pathspec1` is a file path to be copied from, given as a string or a pathname. `to-place` and `pathspec2` are same as `from-place` and `pathspec1` except that they are about files to be copied to.
+
+As `ssh` function above, `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `scp` command published to the standard output before running it.
+
+    (setf *ssh-host* "remotehost")
+    (setf *ssh-user* "user")
+    (task "scp" ()
+      "Copy ~/foo on local host to ~/foo on remote host."
+      (scp :local "~/foo" :remote "~/foo"))
 
 ### [Function] execute
 

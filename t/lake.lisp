@@ -561,6 +561,38 @@
 
 
 ;;;
+;;; SCP
+;;;
+
+(subtest "scp"
+
+  (let ((*ssh-host* "localhost")
+        (*ssh-user* "`whoami`")
+        (*ssh-identity* nil))
+    (with-test-directory
+      (sh "touch foo")
+      (scp :local #P"foo" :remote #P"lake/t/bar") ; Assuming on CircleCI.
+      (is-print (sh "ls foo bar")
+                (format nil "bar~%foo~%"))))
+
+  (is-error (scp :foo #P"foo" :remote #P"bar")
+            simple-error
+            "invalid scp place.")
+
+  (is-error (scp :local :foo :remote #P"bar")
+            type-error
+            "invalid pathspec.")
+
+  (is-error (scp :local #P"foo" :foo #P"bar")
+            simple-error
+            "invalid scp place.")
+
+  (is-error (scp :local #P"foo" :remote :foo)
+            type-error
+            "invalid pathspec."))
+
+
+;;;
 ;;; Execute
 ;;;
 
