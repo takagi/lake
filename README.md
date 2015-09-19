@@ -151,18 +151,6 @@ Loads a Lakefile specified with `pathname` to execute a task of name `target` de
 
     (lake :target "hello")
 
-### [Function] sh
-
-    SH command &key echo
-
-Spawns a subprocess that runs the specified `command` given as a string. When `echo` is `t`, prints `command` to the standard output before runs it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience. 
-Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressions to shell scripts.
-
-    (defparameter cc "gcc")
-
-    (task "hello" ("hello.c")
-      (sh #?"${cc} -o hello hello.c"))
-
 ### [Function] echo
 
     ECHO string
@@ -171,6 +159,63 @@ Writes the given `string` into the standard output followed by a new line, provi
 
     (task "say-hello" ()
       (echo "Hello world!"))
+
+### [Function] sh
+
+    SH command &key echo
+
+Spawns a subprocess that runs the specified `command` given as a string. When `echo` is not `nil`, prints `command` to the standard output before running it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
+Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressions to shell scripts.
+
+    (defparameter cc "gcc")
+
+    (task "hello" ("hello.c")
+      (sh #?"${cc} -o hello hello.c"))
+
+### [Function] ssh
+
+    SSH command &key echo
+
+Spawns a subprocess that runs the specified `command`, given as a string, on a remote host using `ssh(1)`. `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `ssh` command published to the standard output before running it.
+
+    (setf *ssh-host* "remotehost")
+    (setf *ssh-user* "user")
+    (task "hello-via-ssh" ()
+      (ssh "echo Hello World!"))
+
+Note that the following binding does not work as intended because the dynamic binding only keep when `task` macro is evaluated, have already exited when `ssh` function is to be actually evaluated.
+
+    ;; Does not work as intended.
+    (let ((*ssh-host* "localhost")
+          (*ssh-user* "`whoami`"))
+      (task "hello-via-ssh" ()
+        (ssh "echo Hello World!")))
+
+Instead, the next works as intended. Anyway, the former style with `setf` would be enough in Lakefile.
+
+    ;; Works as intended.
+    (task "hello-via-ssh" ()
+      (let ((*ssh-host* "localhost")
+            (*ssh-user* "`whoami`"))
+        (ssh "echo Hello World!")))
+
+### [Special Variable] \*ssh-host\*, \*ssh-user\*, \*ssh-identity\*
+
+These special variables are used to establish a secure connection using `ssh` function. The default value of `*ssh-host*` is unbound so it should be always bound properly when using secure connections. The default value of `*ssh-user*` is `nil`, for giving optional user name. The default value of `*ssh-identity*` is `nil`, for giving optional identity file to prove his/her identity to the remote machine.
+
+### [Function] scp
+
+    SCP from-place pathspec1 to-place pathspec2 &key echo
+
+Copies files between hosts on a network using `scp(1)`. `from-place`, which must be `:local` or `:remote`, specifies if `pathspec1` is a file path on local host or remote host respectively. `pathspec1` is a file path to be copied from, given as a string or a pathname. `to-place` and `pathspec2` are same as `from-place` and `pathspec1` except that they are about files to be copied to.
+
+As `ssh` function above, `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `scp` command published to the standard output before running it.
+
+    (setf *ssh-host* "remotehost")
+    (setf *ssh-user* "user")
+    (task "scp" ()
+      "Copy ~/foo on local host to ~/foo on remote host."
+      (scp :local "~/foo" :remote "~/foo"))
 
 ### [Function] execute
 

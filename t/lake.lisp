@@ -535,12 +535,66 @@
 
 
 ;;;
-;;; Run
+;;; Echo
+;;;
+
+
+;;;
+;;; SH
 ;;;
 
 (subtest "sh"
   (is-print (sh "echo foo" :echo t)
             (format nil "echo foo~%foo~%")))
+
+
+;;;
+;;; SSH
+;;;
+
+(subtest "ssh"
+  (let ((*ssh-host* "localhost")
+        (*ssh-user* "`whoami`")
+        (*ssh-identity* nil))
+    (is-print (ssh "echo foo" :echo t)
+              (format nil "ssh -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~%"))))
+
+
+;;;
+;;; SCP
+;;;
+
+(subtest "scp"
+
+  (let ((*ssh-host* "localhost")
+        (*ssh-user* "`whoami`")
+        (*ssh-identity* nil))
+    (with-test-directory
+      (sh "touch foo")
+      (scp :local #P"foo" :remote #P"lake/t/bar") ; Assuming on CircleCI.
+      (is-print (sh "ls foo bar")
+                (format nil "bar~%foo~%"))))
+
+  (is-error (scp :foo #P"foo" :remote #P"bar")
+            simple-error
+            "invalid scp place.")
+
+  (is-error (scp :local :foo :remote #P"bar")
+            type-error
+            "invalid pathspec.")
+
+  (is-error (scp :local #P"foo" :foo #P"bar")
+            simple-error
+            "invalid scp place.")
+
+  (is-error (scp :local #P"foo" :remote :foo)
+            type-error
+            "invalid pathspec."))
+
+
+;;;
+;;; Execute
+;;;
 
 (subtest "execute"
 
