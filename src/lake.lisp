@@ -11,13 +11,9 @@
            :execute)
   (:shadow :directory)
   (:import-from :alexandria
-                :with-gensyms
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
-  (:import-from :bordeaux-threads
-                :make-thread
-                :join-thread)
   (:import-from :uiop
                 :getcwd
                 :run-program
@@ -31,25 +27,6 @@
 
 (defun last1 (list)
   (car (last list)))
-
-(defmacro dolist% ((var list parallel) &body body)
-  `(flet ((aux (,var)
-            ,@body))
-     (if (not ,parallel)
-         (dolist (,var ,list)
-           (funcall #'aux ,var))
-         (let ((threads
-                 (mapcar
-                   #'(lambda (,var)
-                       (make-thread
-                         #'(lambda ()
-                             (funcall #'aux ,var))
-                         :initial-bindings
-                         `((*standard-output* . ,*standard-output*)
-                           (*error-output* . ,*error-output*))))
-                   ,list)))
-           (loop for thread in threads
-              do (join-thread thread))))))
 
 
 ;;;
@@ -123,7 +100,19 @@
 ;;; Generic task operations
 ;;;
 
-(defgeneric execute-task (task))
+(defgeneric execute-task (task context))
+
+(defgeneric %execute-task (task context))
+
+
+;;;
+;;; Execution context
+;;;
+
+(defclass context () ())
+
+(defun context ()
+  (make-instance 'context))
 
 
 ;;;
@@ -145,10 +134,8 @@
   (print-unreadable-object (task stream :type t :identity t)
     (princ (task-name task) stream)))
 
-(defmethod %execute-task ((task base-task))
-  (when *parallel*
-    (verbose "Execute in parallel." t))
-  (execute-task task))
+(defmethod %execute-task ((task base-task) (context context))
+  (execute-task task context))
 
 
 ;;;
@@ -172,48 +159,37 @@
 
 (defvar *history*)
 
-;; To avoid curious behavior in *TASKS* propergation across threads.
-(defvar *tasks-in-progress*)
+(defmethod %execute-task ((task task) (context context))
+  (let ((*history* nil))
+    (execute-task task context)))
 
-(defmethod %execute-task ((task task))
-  (when *parallel*
-    (verbose "Execute in parallel." t))
-  (let ((*history* nil)
-        (*tasks-in-progress* *tasks*))
-    (execute-task task)))
-
-(defvar *parallel* nil)
-
-(defmethod execute-task :before ((task task))
+(defmethod execute-task :before ((task task) (context context))
   ;; Execute dependency tasks.
-  (let ((history (cons task *history*))
-        (tasks *tasks-in-progress*)
-        (parallel *parallel*)
-        (verbose *verbose*))
-    (dolist% (task-name (task-dependency task) *parallel*)
-      (cond
-        ((task-exists-p task-name tasks)
-         (let ((task1 (get-task task-name tasks)))
-           ;; Error if has circular dependency.
-           (unless (not (member task1 history :test #'task=))
-             (error "The task ~S has circular dependency."
-                    (task-name (last1 history))))
-           ;; Execute a dependency task.
-           (let ((*history* history)
-                 (*tasks-in-progress* tasks)
-                 (*parallel* parallel)
-                 (*verbose* verbose))
-             (execute-task task1))))
-        ((file-exists-p (dependency-file-name task-name))
-         ;; Noop.
-         nil)
-        (t (error "Don't know how to build task ~S." task-name))))))
+  (let ((*history* (cons task *history*)))
+    (loop for task-name in (task-dependency task)
+       do (cond
+            ((task-exists-p task-name)
+             (let ((task1 (get-task task-name)))
+               ;; Error if has circular dependency.
+               (unless (not (member task1 *history* :test #'task=))
+                 (error "The task ~S has circular dependency."
+                        (task-name (last1 *history*))))
+               ;; Execute a dependency task.
+               (execute-task task1 context)))
+            ((file-exists-p (dependency-file-name task-name))
+             ;; Noop.
+             nil)
+            (t (error "Don't know how to build task ~S." task-name))))))
 
-(defmethod execute-task ((task task))
+;; For EXECUTE function.
+(defvar *context-in-action*)
+
+(defmethod execute-task ((task task) (context context))
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (let ((*namespace* (task-namespace task)))
+  (let ((*namespace* (task-namespace task))
+        (*context-in-action* context))
     (funcall (task-action task)))
   ;; Show message if verbose.
   (verbose "done." t)
@@ -259,7 +235,7 @@
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((task file-task))
+(defmethod execute-task ((task file-task) (context context))
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task if required.
@@ -301,7 +277,7 @@
       (concatenate 'string pathspec "/")
       pathspec))
 
-(defmethod execute-task ((directory-task directory-task))
+(defmethod execute-task ((directory-task directory-task) (context context))
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name directory-task)))
   ;; Execute the task.
@@ -330,11 +306,11 @@
   (run-program command :output t :error-output t))
 
 (defun execute (task-name)
-  (%execute task-name *namespace*))
+  (%execute task-name *namespace* *context-in-action*))
 
-(defun %execute (task-name namespace)
+(defun %execute (task-name namespace context)
   (let ((task-name1 (resolve-task-name task-name namespace)))
-    (%execute-task (get-task task-name1))))
+    (%execute-task (get-task task-name1) context)))
 
 
 ;;;
@@ -374,13 +350,11 @@
 
 (defun lake (&key (target "default")
                   (pathname (get-lakefile-pathname))
-                  parallel
                   verbose)
-  (let ((*parallel* parallel)
-        (*verbose* verbose))
+  (let ((*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to execute tasks.
     (let ((*tasks* nil))
       (load-lakefile pathname)
-      (%execute-task (get-task target)))))
+      (%execute-task (get-task target) (context)))))

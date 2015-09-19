@@ -17,12 +17,15 @@
                :cl-syntax-annot
                :closer-mop
                :alexandria
-               :bordeaux-threads
                :split-sequence
-               :cl-syntax-interpol)
+               :cl-syntax-interpol
+               #+thread-support
+               :bordeaux-threads)
   :components ((:module "src"
                 :components
-                ((:file "lake"))))
+                ((:file "lake")
+                 #+thread-support
+                 (:file "lake-parallel"))))
   :description "Lake is a GNU make like build utility in Common Lisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames
