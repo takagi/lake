@@ -535,12 +535,34 @@
 
 
 ;;;
-;;; Run
+;;; Echo
+;;;
+
+
+;;;
+;;; SH
 ;;;
 
 (subtest "sh"
   (is-print (sh "echo foo" :echo t)
             (format nil "echo foo~%foo~%")))
+
+
+;;;
+;;; SSH
+;;;
+
+(subtest "ssh"
+  (let ((*ssh-host* "localhost")
+        (*ssh-user* "`whoami`")
+        (*ssh-identity* nil))
+    (is-print (ssh "echo foo" :echo t)
+              (format nil "ssh -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~%"))))
+
+
+;;;
+;;; Execute
+;;;
 
 (subtest "execute"
 

@@ -7,8 +7,12 @@
            :task
            :file
            :directory
-           :sh
            :echo
+           :sh
+           :*ssh-host*
+           :*ssh-user*
+           :*ssh-identity*
+           :ssh
            :execute)
   (:shadow :directory)
   (:import-from :alexandria
@@ -302,16 +306,45 @@
 
 
 ;;;
-;;; Run
+;;; Echo
 ;;;
 
 (defun echo (string)
   (write-line string))
 
+
+;;;
+;;; SH
+;;;
+
 (defun sh (command &key echo)
   (when echo
     (echo command))
   (run-program command :output t :error-output t))
+
+
+;;;
+;;; SSH
+;;;
+
+(defvar *ssh-host*)
+
+(defvar *ssh-user* nil)
+
+(defvar *ssh-identity* nil)
+
+(defparameter +ssh-control-string+
+  "ssh ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
+
+(defun ssh (command &key echo)
+  (let ((command1 (format nil +ssh-control-string+
+                          *ssh-identity* *ssh-user* *ssh-host* command)))
+    (sh command1 :echo echo)))
+
+
+;;;
+;;; Execute
+;;;
 
 (defun execute (task-name)
   (%execute task-name *namespace*))
