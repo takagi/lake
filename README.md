@@ -141,6 +141,33 @@ Lake provides the following forms to define tasks and namespaces in `Lakefile`:
     $ lake foo:bar:baz
     foo.bar.baz
 
+### Lakefile Modularity
+
+Lakefile modularity is quite easy without any special facilities, just `load` a Lakefile from another is enough. Tasks with same name are replaced with newer loaded as ones in a Lakefile. Namespaces with same name are merged into.
+
+Lakefile
+
+    (load "Lakefile.sub")
+
+    (namespace "name"
+      (task "foo"
+        (echo "name.foo")))
+
+Lakefile.sub
+
+    (namespace "name"
+      (task "bar"
+        (echo "name.bar")))
+
+So you can execute the two tasks respectively as following.
+
+    $ ls
+    Lakefile Lakefile.sub
+    $ lake name:foo
+    name.foo
+    $ lake name:bar
+    name.bar
+
 ## API
 
 ### [Function] lake
