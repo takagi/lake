@@ -374,7 +374,7 @@
   (%execute task-name *namespace*))
 
 (defun %execute (task-name namespace)
-  (let ((task-name1 (resolve-task-name task-name namespace)))
+  (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
     (%execute-task (get-task task-name1))))
 
 

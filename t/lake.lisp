@@ -618,6 +618,16 @@
     (is-print (lake::%execute-task (lake::get-task "hello:hello"))
               (format nil "hello~%world~%")))
 
+  (let ((lake::*tasks* nil))
+    (namespace "hello"
+      (task "foo" ()
+        (echo "foo")
+        (execute ":bar")))
+    (task "bar" ()
+      (echo "bar"))
+    (is-print (lake::%execute-task (lake::get-task "hello:foo"))
+              (format nil "foo~%bar~%")))
+
   (let ((lake::*namespace* nil))
     (is-error (execute :foo)
               type-error
