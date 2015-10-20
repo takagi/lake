@@ -318,10 +318,19 @@
 ;;; SH
 ;;;
 
-(defun sh (command &key echo)
-  (when echo
-    (echo command))
-  (run-program command :output t :error-output t))
+(defgeneric sh (command &key echo)
+   (:documentation "Takes a string or list of strings and runs it from a shell"))
+ 
+ (defmethod sh ((command string) &key echo)
+   (when echo
+     (echo command))
+   (run-program command :output t :error-output t))
+ 
+ (defmethod sh ((command list) &key echo)
+   (when echo
+     (echo command))
+   (run-program (apply #'concatenate 'string command) :output t :error-output t))
+
 
 
 ;;;
