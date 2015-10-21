@@ -191,7 +191,7 @@ Writes the given `string` into the standard output followed by a new line, provi
 
     SH command &key echo
 
-Spawns a subprocess that runs the specified `command` given as a string. When `echo` is not `nil`, prints `command` to the standard output before running it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
+Spawns a subprocess that runs the specified `command` given as a string or list of strings. When `echo` is not `nil`, prints `command` to the standard output before running it. Actually it is a very thin wrapper of `uiop:run-program` provided for UNIX terminology convenience.
 Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressions to shell scripts.
 
     (defparameter cc "gcc")
@@ -203,7 +203,7 @@ Acompanied with cl-interpol's `#?` reader macro, you get more analogous expressi
 
     SSH command &key echo
 
-Spawns a subprocess that runs the specified `command`, given as a string, on a remote host using `ssh(1)`. `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `ssh` command published to the standard output before running it.
+Spawns a subprocess that runs the specified `command`, given as a string or list of strings, on a remote host using `ssh(1)`. `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should be bound properly before use this. When `echo` is not `nil`, prints `ssh` command published to the standard output before running it.
 
     (setf *ssh-host* "remotehost")
     (setf *ssh-user* "user")
