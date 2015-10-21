@@ -319,18 +319,16 @@
 ;;;
 
 (defgeneric sh (command &key echo)
-   (:documentation "Takes a string or list of strings and runs it from a shell"))
- 
- (defmethod sh ((command string) &key echo)
-   (when echo
-     (echo command))
-   (run-program command :output t :error-output t))
- 
- (defmethod sh ((command list) &key echo)
-   (when echo
-     (echo command))
-   (run-program (apply #'concatenate 'string command) :output t :error-output t))
+   (:documentation "Takes a string or list of strings and runs it from a shell."))
 
+(defmethod sh ((command string) &key echo)
+  (when echo
+    (echo command))
+  (run-program command :output t :error-output t))
+
+(defmethod sh ((command list) &key echo)
+  (let ((command1 (format nil "~{~A~^ ~}" command)))
+    (sh command1 :echo echo)))
 
 
 ;;;
@@ -346,10 +344,17 @@
 (defparameter +ssh-control-string+
   "ssh ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
 
-(defun ssh (command &key echo)
+(defgeneric ssh (command &key echo)
+  (:documentation "Takes a string or list of strings and runs it from a shell on a remote host."))
+
+(defmethod ssh ((command string) &key echo)
   (let ((command1 (format nil +ssh-control-string+
                           *ssh-identity* *ssh-user* *ssh-host* command)))
     (sh command1 :echo echo)))
+
+(defmethod ssh ((command list) &key echo)
+  (let ((command1 (format nil "~{~A~^ ~}" command)))
+    (ssh command1 :echo echo)))
 
 
 ;;;
