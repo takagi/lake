@@ -59,7 +59,7 @@
 ;;;
 
 (defvar *path*
-  (mapcar #'directory (split-by-colon (getenv "PATH"))))
+  (mapcar #'cl:directory (split-by-colon (getenv "PATH"))))
 
 ;;;
 ;;; Verbose
