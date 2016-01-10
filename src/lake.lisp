@@ -34,6 +34,32 @@
 (defun last1 (list)
   (car (last list)))
 
+(defun getenv (name &optional default)
+    #+CMU
+    (let ((x (assoc name ext:*environment-list*
+	     		    :test #'string=)))
+	(if x (cdr x) default))
+    #-CMU
+    (or
+     #+Allegro (sys:getenv name)
+     #+CLISP (ext:getenv name)
+     #+ECL (si:getenv name)
+     #+SBCL (sb-unix::posix-getenv name)
+     #+LISPWORKS (lispworks:environment-variable name)
+	 default))
+
+(defun split-by-colon (string)
+  (loop for i = 0 then (1+ j)
+	   as j = (position #\: string :start i)
+	   collect (subseq string i j)
+       while j)
+
+;;;
+;;; Path
+;;;
+
+(defvar *path*
+  (mapcar #'directory (split-by-colon (getenv "PATH"))))
 
 ;;;
 ;;; Verbose
