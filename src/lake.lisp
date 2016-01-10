@@ -52,7 +52,7 @@
   (loop for i = 0 then (1+ j)
 	   as j = (position #\: string :start i)
 	   collect (subseq string i j)
-       while j)
+       while j))
 
 ;;;
 ;;; Path
