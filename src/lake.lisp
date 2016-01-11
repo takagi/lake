@@ -14,7 +14,9 @@
            :*ssh-identity*
            :ssh
            :scp
-           :execute)
+           :execute
+           :getenv
+           :*path*)
   (:shadow :directory)
   (:import-from :alexandria
                 :once-only)
@@ -34,32 +36,6 @@
 (defun last1 (list)
   (car (last list)))
 
-(defun getenv (name &optional default)
-    #+CMU
-    (let ((x (assoc name ext:*environment-list*
-	     		    :test #'string=)))
-	(if x (cdr x) default))
-    #-CMU
-    (or
-     #+Allegro (sys:getenv name)
-     #+CLISP (ext:getenv name)
-     #+ECL (si:getenv name)
-     #+SBCL (sb-unix::posix-getenv name)
-     #+LISPWORKS (lispworks:environment-variable name)
-	 default))
-
-(defun split-by-colon (string)
-  (loop for i = 0 then (1+ j)
-	   as j = (position #\: string :start i)
-	   collect (subseq string i j)
-       while j))
-
-;;;
-;;; Path
-;;;
-
-(defvar *path*
-  (mapcar #'cl:directory (split-by-colon (getenv "PATH"))))
 
 ;;;
 ;;; Verbose
@@ -416,6 +392,39 @@
 (defun %execute (task-name namespace)
   (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
     (%execute-task (get-task task-name1))))
+
+
+;;;
+;;; GETENV
+;;;
+
+(defun getenv (name &optional default)
+  #+cmu
+  (let ((x (assoc name ext:*environment-list*
+                  :test #'string=)))
+    (if x (cdr x) default))
+  #-cmu
+  (or
+   #+allegro (sys:getenv name)
+   #+clisp (ext:getenv name)
+   #+ecl (si:getenv name)
+   #+sbcl (sb-unix::posix-getenv name)
+   #+lispworks (lispworks:environment-variable name)
+   default))
+
+(defun split-by-colon (string)
+  (loop for i = 0 then (1+ j)
+     as j = (position #\: string :start i)
+     collect (subseq string i j)
+     while j))
+
+
+;;;
+;;; *PATH*
+;;;
+
+(defvar *path*
+  (mapcar #'cl:directory (split-by-colon (getenv "PATH"))))
 
 
 ;;;
