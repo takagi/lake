@@ -34,9 +34,8 @@
            (chdir ,olddir))))))
 
 
-;;;
-;;; Utilities
-;;;
+;;
+;; Utilities
 
 (subtest "last1"
 
@@ -48,9 +47,8 @@
             "invalid list."))
 
 
-;;;
-;;; Verbose
-;;;
+;;
+;; Verbose
 
 (subtest "verbose"
 
@@ -79,9 +77,8 @@
             "invalid stream."))
 
 
-;;;
-;;; Namespace
-;;;
+;;
+;; Namespace
 
 (subtest "valid-task-name-p"
 
@@ -230,14 +227,12 @@
             "invalid namespace."))
 
 
-;;;
-;;; Base task
-;;;
+;;
+;; Base task
 
 
-;;;
-;;; Task
-;;;
+;;
+;; Task
 
 (subtest "task"
 
@@ -360,9 +355,8 @@
             "invalid task name."))
 
 
-;;;
-;;; File task
-;;;
+;;
+;; File task
 
 (subtest "file-task"
 
@@ -469,9 +463,8 @@
             "invalid task name."))
 
 
-;;;
-;;; Directory task
-;;;
+;;
+;; Directory task
 
 (subtest "directory-task"
 
@@ -534,14 +527,12 @@
             "invalid task name."))
 
 
-;;;
-;;; Echo
-;;;
+;;
+;; Echo
 
 
-;;;
-;;; SH
-;;;
+;;
+;; SH
 
 (subtest "sh"
 
@@ -552,9 +543,8 @@
             (format nil "echo foo~%foo~%")))
 
 
-;;;
-;;; SSH
-;;;
+;;
+;; SSH
 
 (subtest "ssh"
 
@@ -569,9 +559,8 @@
               (format nil "ssh -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~%"))))
 
 
-;;;
-;;; SCP
-;;;
+;;
+;; SCP
 
 (subtest "scp"
 
@@ -601,9 +590,8 @@
             "invalid pathspec."))
 
 
-;;;
-;;; Execute
-;;;
+;;
+;; Execute
 
 (subtest "execute"
 
@@ -649,9 +637,8 @@
               "no task.")))
 
 
-;;;
-;;; Task manager
-;;;
+;;
+;; Task manager
 
 (subtest "task-exists-p"
 
@@ -703,9 +690,8 @@
             "invalid task manager."))
 
 
-;;;
-;;; lake
-;;;
+;;
+;; lake
 
 
 (finalize)

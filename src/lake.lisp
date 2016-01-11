@@ -29,17 +29,15 @@
 (in-package :lake)
 
 
-;;;
-;;; Utilities
-;;;
+;;
+;; Utilities
 
 (defun last1 (list)
   (car (last list)))
 
 
-;;;
-;;; Verbose
-;;;
+;;
+;; Verbose
 
 (defvar *verbose* nil)
 
@@ -54,9 +52,8 @@
   (values))
 
 
-;;;
-;;; Namespace
-;;;
+;;
+;; Namespace
 
 (defvar *namespace* nil)
 
@@ -104,16 +101,14 @@
 
 
 
-;;;
-;;; Generic task operations
-;;;
+;;
+;; Generic task operations
 
 (defgeneric execute-task (task))
 
 
-;;;
-;;; Base task
-;;;
+;;
+;; Base task
 
 (defclass base-task ()
   ((name :initarg :name :reader task-name)
@@ -137,9 +132,8 @@
   (execute-task task))
 
 
-;;;
-;;; Task
-;;;
+;;
+;; Task
 
 (defclass task (base-task)
   ((dependency :initarg :dependency :reader task-dependency)
@@ -213,9 +207,8 @@
                                    ,@forms)))))
 
 
-;;;
-;;; File task
-;;;
+;;
+;; File task
 
 (defclass file-task (task) ())
 
@@ -270,9 +263,8 @@
                                         ,@forms)))))
 
 
-;;;
-;;; Directory task
-;;;
+;;
+;; Directory task
 
 (defclass directory-task (base-task) ())
 
@@ -308,17 +300,15 @@
   `(register-task (make-directory-task ,name *namespace* ,desc)))
 
 
-;;;
-;;; Echo
-;;;
+;;
+;; Echo
 
 (defun echo (string)
   (write-line string))
 
 
-;;;
-;;; SH
-;;;
+;;
+;; SH
 
 (defgeneric sh (command &key echo)
    (:documentation "Takes a string or list of strings and runs it from a shell."))
@@ -333,9 +323,8 @@
     (sh command1 :echo echo)))
 
 
-;;;
-;;; SSH
-;;;
+;;
+;; SSH
 
 (defvar *ssh-host*)
 
@@ -359,9 +348,8 @@
     (ssh command1 :echo echo)))
 
 
-;;;
-;;; SCP
-;;;
+;;
+;; SCP
 
 (defun scp-filepath (pathspec place)
   (check-type pathspec (or pathname string))
@@ -382,9 +370,8 @@
       (sh command :echo echo))))
 
 
-;;;
-;;; Execute
-;;;
+;;
+;; Execute
 
 (defun execute (task-name)
   (%execute task-name *namespace*))
@@ -394,9 +381,8 @@
     (%execute-task (get-task task-name1))))
 
 
-;;;
-;;; GETENV
-;;;
+;;
+;; GETENV
 
 (defun getenv (name &optional default)
   #+cmu
@@ -419,17 +405,15 @@
      while j))
 
 
-;;;
-;;; *PATH*
-;;;
+;;
+;; *PATH*
 
 (defvar *path*
   (mapcar #'cl:directory (split-by-colon (getenv "PATH"))))
 
 
-;;;
-;;; Task manager
-;;;
+;;
+;; Task manager
 
 (defvar *tasks* nil)
 
@@ -451,9 +435,8 @@
       (error "No task ~S found." name)))
 
 
-;;;
-;;; lake
-;;;
+;;
+;; lake
 
 (defun get-lakefile-pathname ()
   (or (probe-file (merge-pathnames "Lakefile" (getcwd)))
