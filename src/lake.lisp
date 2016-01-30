@@ -316,7 +316,11 @@
 (defmethod sh ((command string) &key echo)
   (when echo
     (echo command))
-  (run-program command :output t :error-output t))
+  (multiple-value-bind (output error-output return-status)
+      (run-program command :output t :error-output t :ignore-error-status t)
+    (declare (ignore output error-output))
+    (unless (zerop return-status)
+      (error "Command ~S exited with error code ~A." command return-status))))
 
 (defmethod sh ((command list) &key echo)
   (let ((command1 (format nil "~{~A~^ ~}" command)))
