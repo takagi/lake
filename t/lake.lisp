@@ -540,7 +540,11 @@
             (format nil "echo foo~%foo~%"))
 
   (is-print (sh '("echo" "foo") :echo t)
-            (format nil "echo foo~%foo~%")))
+            (format nil "echo foo~%foo~%"))
+
+  (is-error (sh "[ 1 = 2 ]")
+            simple-error
+            "Exit with error code."))
 
 
 ;;
