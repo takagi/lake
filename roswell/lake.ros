@@ -1,10 +1,11 @@
 #!/bin/sh
 #|-*- mode:lisp -*-|#
 #|
-exec ros -Q -- $0 "$@"
+exec ros -m lake -Q -- $0 "$@"
 |#
 
 (ql:quickload :lake :silent t)
+(mapc #'unintern '(print-help print-tasks main))
 
 (defun print-help ()
   (write-line "Usage: lake [options] [target] ...")
