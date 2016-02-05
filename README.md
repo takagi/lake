@@ -302,6 +302,7 @@ Here shows `lake-tools` command's detail. `lake-tools init` command would be rep
 
     COMMANDS
 
+        dump    Prepare LAKE command to make it run much faster.
         init    Create an empty Lakefile with boilerplates in current directory.
 
     EXAMPLE
