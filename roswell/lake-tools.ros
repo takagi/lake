@@ -36,5 +36,9 @@ exec ros -Q -- $0 "$@"
   (declare (ignorable argv))
   (cond ((string= "init" $1)
          (init-lakefile))
+        ((string= "dump" $1)
+         (ros:roswell (list "-e" "\"(ros:ignore-shebang)\"" "-l"
+                            (namestring (make-pathname :defaults *load-pathname* :name "lake"))
+                            "dump" "output" "-f" "lake") nil nil))
         (t (print-help)
            (ros:quit 1))))
