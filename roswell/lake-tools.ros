@@ -29,6 +29,7 @@ exec ros -Q -- $0 "$@"
 (defun print-help ()
   (write-line "Usage: lake-tools [commmand]")
   (write-line "Commands:")
+  (write-line "  dump          Prepare LAKE command to make it run much faster.")
   (write-line "  init          Create an empty Lakefile with boilerplates")
   (write-line "                in current directory."))
 
