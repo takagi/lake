@@ -46,6 +46,21 @@
             type-error
             "invalid list."))
 
+(subtest "valid-name-part-p"
+
+  (is (lake::valid-name-part-p "foo")
+      t)
+
+  (is (lake::valid-name-part-p "")
+      nil)
+
+  (is (lake::valid-name-part-p "foo:bar")
+      nil)
+
+  (is-error (lake::valid-name-part-p :foo)
+            type-error
+            "invalid name part."))
+
 
 ;;
 ;; Verbose
@@ -75,6 +90,54 @@
   (is-error (lake::verbose "foo" nil :foo)
             type-error
             "invalid stream."))
+
+
+;;
+;; FQTN
+
+(subtest "valid-fqtn-p"
+
+  (is (lake::valid-fqtn-p "foo:bar:baz")
+      t)
+
+  (is (lake::valid-fqtn-p "")
+      nil)
+
+  (is (lake::valid-fqtn-p "foo:bar:")
+      nil)
+
+  (is (lake::valid-fqtn-p ":foo:bar:baz")
+      nil)
+
+  (is-error (lake::valid-fqtn-p :foo)
+            type-error
+            "invalid type."))
+
+(subtest "fqtn-namespace"
+
+  (is (lake::fqtn-namespace "foo:bar:baz")
+      "foo:bar:")
+
+  (is-error (lake::fqtn-namespace "foo::baz")
+            simple-error
+            "invalid value.")
+
+  (is-error (lake::fqtn-namespace :foo)
+            type-error
+            "invalid type."))
+
+(subtest "fqtn-endname"
+
+  (is (lake::fqtn-endname "foo:bar:baz")
+      "baz")
+
+  (is-error (lake::fqtn-endname "foo::baz")
+            simple-error
+            "invalid value.")
+
+  (is-error (lake::fqtn-endname :foo)
+            type-error
+            "invalid type."))
 
 
 ;;
@@ -193,22 +256,6 @@
   (is-error (lake::resolve-dependency-task-name "foo" '("foo:bar"))
             simple-error
             "invalid namespace."))
-
-(subtest "task-name-namespace"
-
-  (is (lake::task-name-namespace "foo:bar:baz")
-      '("bar" "foo"))
-
-  (is-error (lake::task-name-namespace :foo)
-            type-error))
-
-(subtest "task-name-name"
-
-  (is (lake::task-name-name "foo:bar:baz")
-      "baz")
-
-  (is-error (lake::task-name-name :foo)
-            type-error))
 
 (subtest "namespace macro"
 
