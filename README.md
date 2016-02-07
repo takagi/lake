@@ -172,9 +172,9 @@ So you can execute the two tasks respectively as following.
 
 ### [Function] lake
 
-    LAKE &key target pathname verbose
+    LAKE &key target pathname jobs verbose
 
-Loads a Lakefile specified with `pathname` to execute a task of name `target` defined in the Lakefile. Not nil `verbose` provides verbose mode. If `target` is not given, `"default"` is used for the default task name. If `pathname` is not given, a file of name `Lakefile` in the current directory is searched for. You should be aware that where the Common Lisp process' current directory is.
+Loads a Lakefile specified with `pathname` to execute a task of name `target` defined in the Lakefile. `jobs` as an integer gives how many tasks execute simultaneously. The default number is one, which means serial execution. Not nil `verbose` provides verbose mode. If `target` is not given, `"default"` is used for the default task name. If `pathname` is not given, a file of name `Lakefile` in the current directory is searched for. You should be aware that where the Common Lisp process' current directory is.
 
     (lake :target "hello")
 
@@ -281,6 +281,8 @@ Lake provides its command line interface as a roswell script.
             Use FILE as a Lakefile.
         -h
             Print usage.
+        -j INTEGER
+            Execute multiple tasks simultaneously.
         -T
             Display the tasks with descriptions, then exit.
         -v

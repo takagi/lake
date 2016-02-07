@@ -22,6 +22,12 @@
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
+  (:import-from :lparallel
+                :*kernel*
+                :make-kernel
+                :pmapc
+                :task-handler-bind
+                :invoke-transfer-error)
   (:import-from :uiop
                 :getcwd
                 :run-program
@@ -181,21 +187,29 @@
 
 (defmethod execute-task :before ((task task))
   ;; Execute dependency tasks.
-  (let ((*history* (cons task *history*)))
-    (loop for task-name in (task-dependency task)
-       do (cond
-            ((task-exists-p task-name)
-             (let ((task1 (get-task task-name)))
-               ;; Error if has circular dependency.
-               (unless (not (member task1 *history* :test #'task=))
-                 (error "The task ~S has circular dependency."
-                        (task-name (last1 *history*))))
-               ;; Execute a dependency task.
-               (execute-task task1)))
-            ((file-exists-p (dependency-file-name task-name))
-             ;; Noop.
-             nil)
-            (t (error "Don't know how to build task ~S." task-name))))))
+  (task-handler-bind ((error #'invoke-transfer-error))
+    (pmapc
+     (let ((history (cons task *history*))
+           (tasks *tasks*)
+           (verbose *verbose*))
+       #'(lambda (task-name)
+           (let ((*tasks* tasks)
+                 (*history* history)
+                 (*verbose* verbose))
+             (cond
+               ((task-exists-p task-name)
+                (let ((task1 (get-task task-name)))
+                  ;; Error if has circular dependency.
+                  (unless (not (member task1 *history* :test #'task=))
+                    (error "The task ~S has circular dependency."
+                           (task-name (last1 *history*))))
+                  ;; Execute a dependency task.
+                  (execute-task task1)))
+               ((file-exists-p (dependency-file-name task-name))
+                ;; Noop.
+                nil)
+               (t (error "Don't know how to build task ~S." task-name))))))
+     (task-dependency task))))
 
 (defmethod execute-task ((task task))
   ;; Show message if verbose.
@@ -469,8 +483,10 @@
 
 (defun lake (&key (target "default")
                   (pathname (get-lakefile-pathname))
+                  (jobs 1)
                   (verbose nil))
-  (let ((*verbose* verbose))
+  (let ((*kernel* (make-kernel jobs))
+        (*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to execute tasks.

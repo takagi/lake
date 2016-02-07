@@ -7,6 +7,9 @@
                           :directory)
   (:import-from :alexandria
                 :with-gensyms)
+  (:import-from :lparallel
+                :*kernel*
+                :make-kernel)
   (:import-from :uiop
                 :getcwd
                 :chdir
@@ -32,6 +35,14 @@
            (sh "rm -f hello.c hello.o")
            (sh "rm -rf dir")
            (chdir ,olddir))))))
+
+(defun %make-kernel (worker-count)
+  ;; Just for binding *DEFAULT-PATHNAME-DEFAULTS*.
+  (make-kernel worker-count
+               :bindings `((*standard-output* . ,*standard-output*)
+                           (*error-output* . ,*error-output*)
+                           (*default-pathname-defaults* .
+                            ,*default-pathname-defaults*))))
 
 
 ;;
@@ -264,7 +275,8 @@
       (namespace "bar"
         (task "baz" ()
           (echo "foo.bar.baz")))
-    (is-print (lake::%execute-task (lake::get-task "foo:bar:baz"))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "foo:bar:baz")))
               (format nil "foo.bar.baz~%"))))
 
   (is-error (macroexpand '(namespace (format nil "foo")
@@ -331,7 +343,8 @@
   (let ((task (lake::make-task "foo" nil nil nil #'(lambda ()
                                                      (echo "foo")))))
     (lake::register-task task)
-    (is-print (lake::%execute-task task)
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task task))
               (format nil "foo~%")))
 
   (let ((lake::*tasks* nil)
@@ -343,7 +356,8 @@
                                     (echo "foo:baz")))))
     (lake::register-task task1)
     (lake::register-task task2)
-    (is-print (lake::%execute-task task1)
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task task1))
               (format nil "foo:baz~%foo:bar~%")))
 
   (with-test-directory
@@ -353,10 +367,12 @@
                                      (echo "hello.o")))))
       (lake::register-task task)
       (sh "touch hello.c")
-      (is-print (lake::%execute-task task)
+      (is-print (let ((*kernel* (%make-kernel 1)))
+                  (lake::%execute-task task))
                 (format nil "hello.o~%"))))
 
-  (is-error (lake::%execute-task :foo)
+  (is-error (let ((*kernel* (make-kernel 1)))
+              (lake::%execute-task :foo))
             simple-error
             "invalid task.")
 
@@ -365,14 +381,16 @@
         (task2 (lake::make-task "bar" nil '("foo") nil #'noop)))
     (lake::register-task task1)
     (lake::register-task task2)
-    (is-error (lake::%execute-task task1)
+    (is-error (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task task1))
               simple-error
               "circular dependency."))
 
   (let ((lake::*tasks* nil)
         (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
     (lake::register-task task1)
-    (is-error (lake::%execute-task task1)
+    (is-error (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task task1))
               simple-error
               "dependency task not found.")))
 
@@ -387,13 +405,44 @@
   (is-values (lake::parse-body nil)
              '(nil nil)))
 
+(defvar *lock* (bt:make-lock))
+
+(defmacro atomic-push (obj place)
+  ;; Just like SB-EXT:ATOMIC-ADD
+  `(bt:with-lock-held (*lock*)
+     (push ,obj ,place)))
+
+(subtest "execute-task simultaneously"
+
+  (let ((lake::*tasks* nil))
+    (let (ret)
+      (let ((task1 (lake::make-task "multi" nil '("a" "b" "c") nil #'noop))
+            (task2 (lake::make-task "a" nil '("b") nil
+                                    #'(lambda ()
+                                        (atomic-push 1 ret))))
+            (task3 (lake::make-task "b" nil '("c") nil
+                                    #'(lambda ()
+                                        (atomic-push 2 ret))))
+            (task4 (lake::make-task "c" nil nil nil
+                                    #'(lambda ()
+                                        (atomic-push 3 ret)))))
+        (lake::register-task task1)
+        (lake::register-task task2)
+        (lake::register-task task3)
+        (lake::register-task task4)
+        (let ((*kernel* (make-kernel 3)))
+          (lake::%execute-task task1))
+        (is (sort ret #'<)
+            '(1 2 2 3 3 3))))))
+
 (subtest "task macro"
 
   (let ((lake::*tasks* nil))
     (task "foo" ()
       "desc"
       (echo "foo"))
-    (is-print (lake::%execute-task (lake::get-task "foo"))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "foo")))
               (format nil "foo~%")))
 
   (is-error (macroexpand '(task (format nil "foo") ()
@@ -488,9 +537,11 @@
                                            (sh "touch foo")
                                            (echo "foo")))))
       (sh "touch bar")
-      (is-print (lake::%execute-task task1)
+      (is-print (let ((*kernel* (%make-kernel 1)))
+                  (lake::%execute-task task1))
                 (format nil "foo~%"))
-      (is-print (lake::%execute-task task1)
+      (is-print (let ((*kernel* (%make-kernel 1)))
+                  (lake::%execute-task task1))
                 ""))))
 
 (subtest "file macro"
@@ -501,7 +552,8 @@
         "desc"
         (echo "gcc -c hello.c"))
       (sh "touch hello.c")
-      (is-print (lake::%execute-task (lake::get-task "hello.o"))
+      (is-print (let ((*kernel* (%make-kernel 1)))
+                  (lake::%execute-task (lake::get-task "hello.o")))
                 (format nil "gcc -c hello.c~%"))))
 
   (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
@@ -547,7 +599,8 @@
     (let ((lake::*tasks* nil)
           (task (lake::make-directory-task "dir" nil nil)))
       (lake::register-task task)
-      (lake::%execute-task task)
+      (let ((*kernel* (%make-kernel 1)))
+        (lake::%execute-task task))
       (is (and (directory-exists-p "dir") t)
           t)))
 
@@ -556,7 +609,8 @@
           (task (lake::make-directory-task "dir" nil nil)))
       (lake::register-task task)
       (sh "mkdir dir")
-      (lake::%execute-task task)
+      (let ((*kernel* (%make-kernel 1)))
+        (lake::%execute-task task))
       (is (and (directory-exists-p "dir") t)
           t))))
 
@@ -565,7 +619,8 @@
   (with-test-directory
     (let ((lake::*tasks* nil))
       (directory "dir" "desc")
-      (lake::%execute-task (lake::get-task "dir"))
+      (let ((*kernel* (%make-kernel 1)))
+        (lake::%execute-task (lake::get-task "dir")))
       (is (and (directory-exists-p "dir") t)
           t)))
 
@@ -653,7 +708,8 @@
         (execute "bar"))
       (task "bar" ()
         (echo "bar")))
-    (is-print (lake::%execute-task (lake::get-task "hello:foo"))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "hello:foo")))
               (format nil "foo~%bar~%")))
 
   (let ((lake::*tasks* nil))
@@ -663,7 +719,8 @@
         (execute "world"))
       (file "world" ()
         (echo "world")))
-    (is-print (lake::%execute-task (lake::get-task "hello:hello"))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "hello:hello")))
               (format nil "hello~%world~%")))
 
   (let ((lake::*tasks* nil))
@@ -673,7 +730,8 @@
         (execute ":bar")))
     (task "bar" ()
       (echo "bar"))
-    (is-print (lake::%execute-task (lake::get-task "hello:foo"))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "hello:foo")))
               (format nil "foo~%bar~%")))
 
   (let ((lake::*namespace* nil))
@@ -725,7 +783,8 @@
                                                       (echo "foo")))))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
-    (is-print (lake::%execute-task (lake::get-task "foo" tasks))
+    (is-print (let ((*kernel* (make-kernel 1)))
+                (lake::%execute-task (lake::get-task "foo" tasks)))
               (format nil "foo~%")))
 
   (is-error (lake::get-task :foo nil)

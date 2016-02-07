@@ -12,6 +12,7 @@ exec ros -m lake -Q -- $0 "$@"
   (write-line "Options:")
   (write-line "  -f FILE       Use FILE as a lakefile.")
   (write-line "  -h            Print this message and exit.")
+  (write-line "  -j INTEGER    Execute multiple tasks simultaneously.")
   (write-line "  -T            Display the tasks with descriptions, then exit.")
   (write-line "  -v            Verbose mode."))
 
@@ -23,19 +24,24 @@ exec ros -m lake -Q -- $0 "$@"
 (defun main (&rest argv)
   (declare (ignorable argv))
   (handler-case
-      (let (targets pathname f-mode v-mode)
+      (let (targets pathname jobs f-mode j-mode v-mode)
         (loop for arg in argv
            do (cond
                 (f-mode (setf pathname arg)
                         (setf f-mode nil))
+                (j-mode (setf jobs (parse-integer arg))
+                        (setf j-mode nil))
                 ((string= "-f" arg) (setf f-mode t))
                 ((string= "-h" arg) (print-help)
                                     (ros:quit 1))
+                ((string= "-j" arg) (setf j-mode t))
                 ((string= "-T" arg) (print-tasks pathname)
                                     (ros:quit 1))
                 ((string= "-v" arg) (setf v-mode t))
                 (t (push arg targets))))
         (let ((params `(:verbose ,v-mode
+                        ,@(when jobs
+                            `(:jobs ,jobs))
                         ,@(when pathname
                             `(:pathname ,pathname)))))
           (if targets
