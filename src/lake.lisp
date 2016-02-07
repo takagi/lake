@@ -22,6 +22,15 @@
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
+  (:import-from :lparallel
+                :*kernel*
+                :make-kernel
+                :make-ptree
+                :ptree-fn
+                :call-ptree
+                :task-handler-bind
+                :ptree-undefined-function-error
+                :invoke-transfer-error)
   (:import-from :uiop
                 :getcwd
                 :run-program
@@ -121,43 +130,26 @@
 
 
 ;;
-;; Generic task operations
+;; Task
 
-(defgeneric execute-task (task))
-
-
-;;
-;; Base task
-
-(defclass base-task ()
+(defclass task ()
   ((name :initarg :name :reader task-name)
-   (description :initarg :description :reader task-description)))
+   (dependency :initarg :dependency :reader task-dependency)
+   (description :initarg :description :reader task-description)
+   (action :initarg :action :reader task-action)))
 
 (defun task= (task1 task2)
   ;; Now tasks with same names are not permitted.
   (string= (task-name task1)
            (task-name task2)))
 
-(defmethod print-object ((task base-task) stream)
+(defmethod print-object ((task task) stream)
   (print-unreadable-object (task stream :type t :identity t)
     (princ (task-name task) stream)))
 
-(defmethod %execute-task ((task base-task))
-  ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
-  ;; mismatch.
-  (execute-task task))
-
-
-;;
-;; Task
-
-(defclass task (base-task)
-  ((dependency :initarg :dependency :reader task-dependency)
-   (action :initarg :action :reader task-action)))
-
 (defun make-task (name namespace dependency desc action)
-  (check-type action function)
   (check-type desc (or string null))
+  (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
@@ -173,29 +165,7 @@
 (defun dependency-file-name (task-name)
   (fqtn-endname task-name))
 
-(defvar *history*)
-
-(defmethod %execute-task ((task task))
-  (let ((*history* nil))
-    (execute-task task)))
-
-(defmethod execute-task :before ((task task))
-  ;; Execute dependency tasks.
-  (let ((*history* (cons task *history*)))
-    (loop for task-name in (task-dependency task)
-       do (cond
-            ((task-exists-p task-name)
-             (let ((task1 (get-task task-name)))
-               ;; Error if has circular dependency.
-               (unless (not (member task1 *history* :test #'task=))
-                 (error "The task ~S has circular dependency."
-                        (task-name (last1 *history*))))
-               ;; Execute a dependency task.
-               (execute-task task1)))
-            ((file-exists-p (dependency-file-name task-name))
-             ;; Noop.
-             nil)
-            (t (error "Don't know how to build task ~S." task-name))))))
+(defgeneric execute-task (task))
 
 (defmethod execute-task ((task task))
   ;; Show message if verbose.
@@ -231,12 +201,13 @@
 (defclass file-task (task) ())
 
 (defun make-file-task (name namespace dependency desc action)
-  (check-type action function)
   (check-type desc (or string null))
+  (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
-                          (resolve-dependency-task-name task-name namespace)))
+                          (resolve-dependency-task-name task-name
+                                                        namespace)))
         (action1 #'(lambda ()
                      (let ((*namespace* namespace))
                        (funcall action)))))
@@ -254,24 +225,24 @@
 (defun file-task-out-of-date (file-task)
   (let ((stamp (file-timestamp (file-task-file-name file-task))))
     (loop for task-name in (task-dependency file-task)
-       if (< stamp (file-timestamp (dependency-file-name task-name)))
+       if (< stamp (file-timestamp (fqtn-endname task-name)))
        return t)))
 
-(defmethod file-task-to-be-executed-p ((file-task file-task))
+(defun file-task-to-be-executed-p (file-task)
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((task file-task))
+(defmethod execute-task ((file-task file-task))
   ;; Show message if verbose.
-  (verbose (format nil "~A: " (task-name task)))
-  ;; Execute the task if required.
-  (if (file-task-to-be-executed-p task)
+  (verbose (format nil "~A: " (task-name file-task)))
+  ;; Execute file task if required.
+  (if (file-task-to-be-executed-p file-task)
       (progn
-        ;; Execute the task.
-        (funcall (task-action task))
+        ;; Execute file task.
+        (funcall (task-action file-task))
         ;; Show message if verbose.
         (verbose "done." t))
-      ;; Skip the task to show message if verbose.
+      ;; Skip file task to show message if verbose.
       (verbose "skipped." t))
   (values))
 
@@ -286,31 +257,27 @@
 ;;
 ;; Directory task
 
-(defclass directory-task (base-task) ())
-
-(defun make-directory-task (name namespace desc)
-  (check-type desc (or string null))
-  (let ((name1 (resolve-task-name name namespace)))
-    (make-instance 'directory-task :name name1 :description desc)))
-
-(defun directory-task-directory-name (directory-task)
-  (fqtn-endname (task-name directory-task)))
+(defclass directory-task (task) ())
 
 (defun ensure-directory-pathspec (pathspec)
   (if (char/= (aref (reverse pathspec) 0) #\/)
       (concatenate 'string pathspec "/")
       pathspec))
 
-(defmethod execute-task ((directory-task directory-task))
-  ;; Show message if verbose.
-  (verbose (format nil "~A: " (task-name directory-task)))
-  ;; Execute the task.
-  (let ((name (ensure-directory-pathspec
-               (directory-task-directory-name directory-task))))
-    (ensure-directories-exist name))
-  ;; Show message if verbose.
-  (verbose "done." t)
-  (values))
+(defun make-directory-task (name namespace desc)
+  (check-type desc (or string null))
+  (let ((name1 (resolve-task-name name namespace))
+        (action1 #'(lambda ()
+                     (let ((pathspec
+                            (ensure-directory-pathspec name)))
+                       (ensure-directories-exist pathspec)))))
+    (make-instance 'directory-task :name name1
+                                   :dependency nil
+                                   :description desc
+                                   :action action1)))
+
+(defun directory-task-directory-name (directory-task)
+  (fqtn-endname (task-name directory-task)))
 
 (defmacro directory (name &optional desc)
   (check-type name string)
@@ -329,7 +296,8 @@
 ;; SH
 
 (defgeneric sh (command &key echo)
-   (:documentation "Takes a string or list of strings and runs it from a shell."))
+   (:documentation
+    "Takes a string or list of strings and runs it from a shell."))
 
 (defmethod sh ((command string) &key echo)
   (when echo
@@ -399,8 +367,9 @@
   (%execute task-name *namespace*))
 
 (defun %execute (task-name namespace)
-  (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
-    (%execute-task (get-task task-name1))))
+  (let ((task-name1 (resolve-dependency-task-name task-name namespace))
+        (*kernel* (make-kernel 1))) ; Run task in another kernel in serial.
+    (run-task task-name1)))
 
 
 ;;
@@ -442,8 +411,8 @@
 (defmacro register-task (task &optional (tasks '*tasks*))
   (once-only (task)
     `(progn
-       (check-type ,task base-task)
-       (setf ,tasks (remove-duplicates ,tasks :test #'task=))
+       (check-type ,task task)
+       (setf ,tasks (remove ,task ,tasks :test #'task=))
        (push ,task ,tasks))))
 
 (defun task-exists-p (name &optional (tasks *tasks*))
@@ -455,6 +424,46 @@
   (check-type name string)
   (or (car (member name tasks :key #'task-name :test #'string=))
       (error "No task ~S found." name)))
+
+(defun run-task (target &optional (tasks *tasks*))
+  (let ((ptree (make-ptree)))
+    ;; Define ptree nodes.
+    (dolist (task tasks)
+      (let ((task-name (intern (task-name task)))
+            (dependency
+             (loop for task-name1 in (task-dependency task)
+                append
+                  (cond
+                    ((task-exists-p task-name1 tasks)
+                     (list (intern task-name1)))
+                    ((file-exists-p
+                      (dependency-file-name task-name1))
+                     ;; In case the task is not defined but file of the
+                     ;; dependency name exists, remove it from CALL-PTREE's
+                     ;; dependency computing.
+                     nil)
+                    (t
+                     ;; In case how to build a task is unkown, here append it
+                     ;; to dependency list to raise an error on computing
+                     ;; dependency in CALL-PTREE below.
+                     (list (intern task-name1)))))))
+        (ptree-fn task-name dependency
+                  (let ((verbose *verbose*)
+                        (kernel *kernel*))
+                    #'(lambda (&rest _)
+                        (declare (ignore _))
+                        (let ((*tasks* tasks)
+                              (*verbose* verbose)
+                              (*kernel* kernel))
+                          (execute-task task))))
+                  ptree)))
+    ;; Call ptree.
+    (handler-case
+        (task-handler-bind ((error #'invoke-transfer-error))
+          (call-ptree (intern target) ptree))
+      (ptree-undefined-function-error (e)
+        (error "Don't know how to build task ~A."
+               (lparallel.ptree::ptree-error-id e))))))
 
 
 ;;
@@ -469,14 +478,17 @@
 
 (defun lake (&key (target "default")
                   (pathname (get-lakefile-pathname))
+                  (jobs 1)
                   (verbose nil))
-  (let ((*verbose* verbose))
+  (let ((*verbose* verbose)
+        (*kernel* (make-kernel jobs))
+        (*tasks* nil))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
-    ;; Load Lakefile to execute tasks.
-    (let ((*tasks* nil))
-      (load-lakefile pathname)
-      (%execute-task (get-task target)))))
+    ;; Load Lakefile.
+    (load-lakefile pathname)
+    ;; Execute target task.
+    (run-task target)))
 
 (defun tasks-max-width (tasks)
   (loop for task in tasks
