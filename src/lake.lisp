@@ -35,6 +35,11 @@
 (defun last1 (list)
   (car (last list)))
 
+(defun valid-name-part-p (string)
+  (check-type string string)
+  (and (string/= string "")
+       (not (find #\: string))))
+
 
 ;;
 ;; Verbose
@@ -53,6 +58,27 @@
 
 
 ;;
+;; FQTN - Fully qualified task name
+
+(defun valid-fqtn-p (string)
+  (check-type string string)
+  (every #'valid-name-part-p
+   (split-sequence #\: string)))
+
+(defun fqtn-namespace (fqtn)
+  (unless (valid-fqtn-p fqtn)
+    (error "The value ~S is an invalid FQTN." fqtn))
+  (format nil "~{~A:~}"
+   (butlast
+    (split-sequence #\: fqtn))))
+
+(defun fqtn-endname (fqtn)
+  (unless (valid-fqtn-p fqtn)
+    (error "The value ~S is an invalid FQTN." fqtn))
+  (last1 (split-sequence #\: fqtn)))
+
+
+;;
 ;; Namespace
 
 (defvar *namespace* nil)
@@ -63,11 +89,10 @@
      ,@body))
 
 (defun valid-task-name-p (task-name)
-  (and (string/= task-name "")
-       (not (find #\: task-name))))
+  (valid-name-part-p task-name))
 
 (defun valid-namespace-p (namespace)
-  (every #'valid-task-name-p namespace))
+  (every #'valid-name-part-p namespace))
 
 (defun resolve-task-name (task-name namespace)
   (unless (valid-task-name-p task-name)
@@ -77,12 +102,13 @@
   (format nil "~{~A:~}~A" (reverse namespace) task-name))
 
 (defun valid-dependency-task-name-p (task-name)
+  (check-type task-name string)
   (and (string/= task-name "")
        (if (char= #\: (aref task-name 0))
-           (every #'valid-task-name-p
-                  (split-sequence #\: (subseq task-name 1)))
-           (every #'valid-task-name-p
-                  (split-sequence #\: task-name)))))
+           (every #'valid-name-part-p
+            (split-sequence #\: (subseq task-name 1)))
+           (every #'valid-name-part-p
+            (split-sequence #\: task-name)))))
 
 (defun resolve-dependency-task-name (task-name namespace)
   (unless (valid-dependency-task-name-p task-name)
@@ -92,13 +118,6 @@
   (if (char= #\: (aref task-name 0))
       (subseq task-name 1)
       (format nil "~{~A:~}~A" (reverse namespace) task-name)))
-
-(defun task-name-namespace (task-name)
-  (cdr (reverse (split-sequence #\: task-name))))
-
-(defun task-name-name (task-name)
-  (last1 (split-sequence #\: task-name)))
-
 
 
 ;;
@@ -113,9 +132,6 @@
 (defclass base-task ()
   ((name :initarg :name :reader task-name)
    (description :initarg :description :reader task-description)))
-
-(defun task-namespace (task)
-  (task-name-namespace (task-name task)))
 
 (defun task= (task1 task2)
   ;; Now tasks with same names are not permitted.
@@ -145,14 +161,17 @@
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
-                          (resolve-dependency-task-name task-name namespace))))
+                          (resolve-dependency-task-name task-name namespace)))
+        (action1 #'(lambda ()
+                     (let ((*namespace* namespace))
+                       (funcall action)))))
     (make-instance 'task :name name1
                          :dependency dependency1
                          :description desc
-                         :action action)))
+                         :action action1)))
 
 (defun dependency-file-name (task-name)
-  (task-name-name task-name))
+  (fqtn-endname task-name))
 
 (defvar *history*)
 
@@ -182,8 +201,7 @@
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (let ((*namespace* (task-namespace task)))
-    (funcall (task-action task)))
+  (funcall (task-action task))
   ;; Show message if verbose.
   (verbose "done." t)
   (values))
@@ -218,14 +236,17 @@
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (loop for task-name in dependency
                         collect
-                          (resolve-dependency-task-name task-name namespace))))
+                          (resolve-dependency-task-name task-name namespace)))
+        (action1 #'(lambda ()
+                     (let ((*namespace* namespace))
+                       (funcall action)))))
     (make-instance 'file-task :name name1
                               :dependency dependency1
                               :description desc
-                              :action action)))
+                              :action action1)))
 
 (defun file-task-file-name (file-task)
-  (task-name-name (task-name file-task)))
+  (fqtn-endname (task-name file-task)))
 
 (defun file-timestamp (file-name)
   (file-write-date file-name))
@@ -247,8 +268,7 @@
   (if (file-task-to-be-executed-p task)
       (progn
         ;; Execute the task.
-        (let ((*namespace* (task-namespace task)))
-          (funcall (task-action task)))
+        (funcall (task-action task))
         ;; Show message if verbose.
         (verbose "done." t))
       ;; Skip the task to show message if verbose.
@@ -270,13 +290,11 @@
 
 (defun make-directory-task (name namespace desc)
   (check-type desc (or string null))
-  (unless (valid-task-name-p name)
-    (error "The value ~S is an invalid task name." name))
   (let ((name1 (resolve-task-name name namespace)))
     (make-instance 'directory-task :name name1 :description desc)))
 
 (defun directory-task-directory-name (directory-task)
-  (task-name-name (task-name directory-task)))
+  (fqtn-endname (task-name directory-task)))
 
 (defun ensure-directory-pathspec (pathspec)
   (if (char/= (aref (reverse pathspec) 0) #\/)
