@@ -129,7 +129,7 @@
 ;;
 ;; Generic task operations
 
-(defgeneric execute-task (task))
+(defgeneric execute-task (task verbose))
 
 
 ;;
@@ -147,11 +147,6 @@
 (defmethod print-object ((task base-task) stream)
   (print-unreadable-object (task stream :type t :identity t)
     (princ (task-name task) stream)))
-
-(defmethod %execute-task ((task base-task))
-  ;; Needed just for (EXECUTE-TASK TASK) because of functional / CLOS sytle
-  ;; mismatch.
-  (execute-task task))
 
 
 ;;
@@ -181,37 +176,30 @@
 
 (defvar *history*)
 
-(defmethod %execute-task ((task task))
-  (let ((*history* nil))
-    (execute-task task)))
-
-(defmethod execute-task :before ((task task))
+(defmethod %execute-task ((task task) history tasks verbose)
   ;; Execute dependency tasks.
   (task-handler-bind ((error #'invoke-transfer-error))
     (pmapc
-     (let ((history (cons task *history*))
-           (tasks *tasks*)
-           (verbose *verbose*))
+     (let ((history1 (cons task history)))
        #'(lambda (task-name)
-           (let ((*tasks* tasks)
-                 (*history* history)
-                 (*verbose* verbose))
-             (cond
-               ((task-exists-p task-name)
-                (let ((task1 (get-task task-name)))
-                  ;; Error if has circular dependency.
-                  (unless (not (member task1 *history* :test #'task=))
-                    (error "The task ~S has circular dependency."
-                           (task-name (last1 *history*))))
-                  ;; Execute a dependency task.
-                  (execute-task task1)))
-               ((file-exists-p (dependency-file-name task-name))
-                ;; Noop.
-                nil)
-               (t (error "Don't know how to build task ~S." task-name))))))
-     (task-dependency task))))
+           (cond
+             ((task-exists-p task-name tasks)
+              (let ((task1 (get-task task-name tasks)))
+                ;; Error if has circular dependency.
+                (unless (not (member task1 history1 :test #'task=))
+                  (error "The task ~S has circular dependency."
+                         (task-name (last1 history1))))
+                ;; Execute a dependency task.
+                (%execute-task task1 history1 tasks verbose)))
+             ((file-exists-p (dependency-file-name task-name))
+              ;; Noop.
+              nil)
+             (t (error "Don't know how to build task ~S." task-name)))))
+     (task-dependency task)))
+  ;; Execute task.
+  (execute-task task verbose))
 
-(defmethod execute-task ((task task))
+(defmethod execute-task ((task task) verbose)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
@@ -275,7 +263,7 @@
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((task file-task))
+(defmethod execute-task ((task file-task) verbose)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task if required.
@@ -315,7 +303,7 @@
       (concatenate 'string pathspec "/")
       pathspec))
 
-(defmethod execute-task ((directory-task directory-task))
+(defmethod execute-task ((directory-task directory-task) verbose)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name directory-task)))
   ;; Execute the task.
@@ -336,7 +324,8 @@
 ;; Echo
 
 (defun echo (string)
-  (write-line string))
+  (write-line string)
+  (force-output))
 
 
 ;;
@@ -409,12 +398,12 @@
 ;;
 ;; Execute
 
-(defun execute (task-name)
-  (%execute task-name *namespace*))
+;; (defun execute (task-name)
+;;   (%execute task-name *namespace*))
 
-(defun %execute (task-name namespace)
-  (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
-    (%execute-task (get-task task-name1))))
+;; (defun %execute (task-name namespace)
+;;   (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
+;;     (%execute-task (get-task task-name1))))
 
 
 ;;
@@ -492,7 +481,7 @@
     ;; Load Lakefile to execute tasks.
     (let ((*tasks* nil))
       (load-lakefile pathname)
-      (%execute-task (get-task target)))))
+      (%execute-task (get-task target) nil *tasks* verbose))))
 
 (defun tasks-max-width (tasks)
   (loop for task in tasks
