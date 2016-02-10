@@ -528,6 +528,16 @@
       (is (and (directory-exists-p "dir") t)
           t))))
 
+(subtest "directory-task-directory-name"
+
+  (let ((task (lake::make-directory-task "dir" '("foo") "desc")))
+    (is (lake::directory-task-directory-name task)
+        "dir"))
+
+  (is-error (lake::directory-task-directory-name :foo)
+            type-error
+            "invalid directory task."))
+
 (let ((lake::*tasks* nil))
 
   (directory "dir" "desc")

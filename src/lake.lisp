@@ -281,6 +281,7 @@
                                    :action action1)))
 
 (defun directory-task-directory-name (directory-task)
+  (check-type directory-task directory-task)
   (fqtn-endname (task-name directory-task)))
 
 (defmacro directory (name &optional desc)
