@@ -277,7 +277,7 @@
         (echo "foo.bar.baz"))))
 
   (is-print (let ((*kernel* (make-kernel 1)))
-              (lake::run-task "foo:bar:baz"))
+              (lake::run-task "foo:bar:baz" lake::*tasks*))
             (format nil "foo.bar.baz~%"))
 
   (is-error (macroexpand '(namespace (format nil "foo")
@@ -366,7 +366,7 @@
   (subtest "task macro"
 
     (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "foo"))
+                (lake::run-task "foo" lake::*tasks*))
               (format nil "foo~%"))
 
     (is-error (macroexpand '(task (format nil "foo") ()
@@ -473,7 +473,7 @@
     (with-test-directory
       (sh "touch hello.c")
       (is-print (let ((*kernel* (%make-kernel 1)))
-                  (lake::run-task "hello.o"))
+                  (lake::run-task "hello.o" lake::*tasks*))
                 (format nil "gcc -c hello.c~%")))
 
     (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
@@ -536,7 +536,7 @@
 
     (with-test-directory
       (let ((*kernel* (%make-kernel 1)))
-        (lake::run-task "dir"))
+        (lake::run-task "dir" lake::*tasks*))
       (is (and (directory-exists-p "dir") t)
           t))
 
@@ -647,24 +647,24 @@
   (subtest "execute"
 
     (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "hello1:foo"))
+                (lake::run-task "hello1:foo" lake::*tasks*))
               (format nil "foo~%bar~%"))
 
     (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "hello2:hello"))
+                (lake::run-task "hello2:hello" lake::*tasks*))
               (format nil "hello~%world~%"))
 
     (is-print (let ((*kernel* (make-kernel 1)))
-                (lake::run-task "hello3:foo"))
+                (lake::run-task "hello3:foo" lake::*tasks*))
               (format nil "foo~%bar~%"))
 
     (is-error (let ((*kernel* (make-kernel 1)))
-                (lake::run-task :foo))
+                (lake::run-task :foo lake::*tasks*))
               type-error
               "invalid task name.")
 
     (is-error (let ((*kernel* (make-kernel 1)))
-                (lake::run-task "foo"))
+                (lake::run-task "foo" lake::*tasks*))
               simple-error
               "no task.")
 
@@ -692,7 +692,7 @@
     (is (lake::task-exists-p "bar" tasks)
         nil))
 
-  (is-error (lake::task-exists-p :foo)
+  (is-error (lake::task-exists-p :foo nil)
             type-error
             "invalid task name.")
 

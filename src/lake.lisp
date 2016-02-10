@@ -187,12 +187,15 @@
                 (values forms nil)))
         (values nil nil))))
 
+(defvar *tasks* nil)
+
 (defmacro task (name dependency &body body)
   (check-type name string)
   (multiple-value-bind (forms desc) (parse-body body)
     `(register-task (make-task ,name *namespace* ',dependency ,desc
                                #'(lambda ()
-                                   ,@forms)))))
+                                   ,@forms))
+                    *tasks*)))
 
 
 ;;
@@ -251,7 +254,8 @@
   (multiple-value-bind (forms desc) (parse-body body)
     `(register-task (make-file-task ,name *namespace* ',dependency ,desc
                                     #'(lambda ()
-                                        ,@forms)))))
+                                        ,@forms))
+                    *tasks*)))
 
 
 ;;
@@ -282,7 +286,7 @@
 (defmacro directory (name &optional desc)
   (check-type name string)
   (check-type desc (or string null))
-  `(register-task (make-directory-task ,name *namespace* ,desc)))
+  `(register-task (make-directory-task ,name *namespace* ,desc) *tasks*))
 
 
 ;;
@@ -364,12 +368,12 @@
 ;; Execute
 
 (defun execute (task-name)
-  (%execute task-name *namespace*))
+  (%execute task-name *namespace* *tasks*))
 
-(defun %execute (task-name namespace)
+(defun %execute (task-name namespace tasks)
   (let ((task-name1 (resolve-dependency-task-name task-name namespace))
         (*kernel* (make-kernel 1))) ; Run task in another kernel in serial.
-    (run-task task-name1)))
+    (run-task task-name1 tasks)))
 
 
 ;;
@@ -406,26 +410,24 @@
 ;;
 ;; Task manager
 
-(defvar *tasks* nil)
-
-(defmacro register-task (task &optional (tasks '*tasks*))
+(defmacro register-task (task tasks)
   (once-only (task)
     `(progn
        (check-type ,task task)
        (setf ,tasks (remove ,task ,tasks :test #'task=))
        (push ,task ,tasks))))
 
-(defun task-exists-p (name &optional (tasks *tasks*))
+(defun task-exists-p (name tasks)
   (check-type name string)
   (and (member name tasks :key #'task-name :test #'string=)
        t))
 
-(defun get-task (name &optional (tasks *tasks*))
+(defun get-task (name tasks)
   (check-type name string)
   (or (car (member name tasks :key #'task-name :test #'string=))
       (error "No task ~S found." name)))
 
-(defun run-task (target &optional (tasks *tasks*))
+(defun run-task (target tasks)
   (let ((ptree (make-ptree)))
     ;; Define ptree nodes.
     (dolist (task tasks)
@@ -452,7 +454,7 @@
                         (kernel *kernel*))
                     #'(lambda (&rest _)
                         (declare (ignore _))
-                        (let ((*tasks* tasks)
+                        (let ((*tasks* tasks) ; For EXECUTE function.
                               (*verbose* verbose)
                               (*kernel* kernel))
                           (execute-task task))))
@@ -488,7 +490,7 @@
     ;; Load Lakefile.
     (load-lakefile pathname)
     ;; Execute target task.
-    (run-task target)))
+    (run-task target *tasks*)))
 
 (defun tasks-max-width (tasks)
   (loop for task in tasks
