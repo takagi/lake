@@ -7,9 +7,6 @@
                           :directory)
   (:import-from :alexandria
                 :with-gensyms)
-  (:import-from :lparallel
-                :*kernel*
-                :make-kernel)
   (:import-from :uiop
                 :getcwd
                 :chdir
@@ -35,15 +32,6 @@
            (sh "rm -f hello.c hello.o")
            (sh "rm -rf dir")
            (chdir ,olddir))))))
-
-(defun %make-kernel (worker-count)
-  ;; Just for binding *DEFAULT-PATHNAME-DEFAULTS*.
-  (make-kernel worker-count
-               :bindings `((*standard-output* . ,*standard-output*)
-                           (*error-output* . ,*error-output*)
-                           (*default-pathname-defaults* .
-                            ,*default-pathname-defaults*))))
-
 
 
 ;;
@@ -276,8 +264,7 @@
       (task "baz" ()
         (echo "foo.bar.baz"))))
 
-  (is-print (let ((*kernel* (make-kernel 1)))
-              (lake::run-task "foo:bar:baz" lake::*tasks*))
+  (is-print (lake::run-task "foo:bar:baz" lake::*tasks*)
             (format nil "foo.bar.baz~%"))
 
   (is-error (macroexpand '(namespace (format nil "foo")
@@ -365,8 +352,7 @@
 
   (subtest "task macro"
 
-    (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "foo" lake::*tasks*))
+    (is-print (lake::run-task "foo" lake::*tasks*)
               (format nil "foo~%"))
 
     (is-error (macroexpand '(task (format nil "foo") ()
@@ -472,8 +458,7 @@
 
     (with-test-directory
       (sh "touch hello.c")
-      (is-print (let ((*kernel* (%make-kernel 1)))
-                  (lake::run-task "hello.o" lake::*tasks*))
+      (is-print (lake::run-task "hello.o" lake::*tasks*)
                 (format nil "gcc -c hello.c~%")))
 
     (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
@@ -545,8 +530,7 @@
   (subtest "directory macro"
 
     (with-test-directory
-      (let ((*kernel* (%make-kernel 1)))
-        (lake::run-task "dir" lake::*tasks*))
+      (lake::run-task "dir" lake::*tasks*)
       (is (and (directory-exists-p "dir") t)
           t))
 
@@ -656,25 +640,20 @@
 
   (subtest "execute"
 
-    (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "hello1:foo" lake::*tasks*))
+    (is-print (lake::run-task "hello1:foo" lake::*tasks*)
               (format nil "foo~%bar~%"))
 
-    (is-print (let ((*kernel* (%make-kernel 1)))
-                (lake::run-task "hello2:hello" lake::*tasks*))
+    (is-print (lake::run-task "hello2:hello" lake::*tasks*)
               (format nil "hello~%world~%"))
 
-    (is-print (let ((*kernel* (make-kernel 1)))
-                (lake::run-task "hello3:foo" lake::*tasks*))
+    (is-print (lake::run-task "hello3:foo" lake::*tasks*)
               (format nil "foo~%bar~%"))
 
-    (is-error (let ((*kernel* (make-kernel 1)))
-                (lake::run-task :foo lake::*tasks*))
+    (is-error (lake::run-task :foo lake::*tasks*)
               type-error
               "invalid task name.")
 
-    (is-error (let ((*kernel* (make-kernel 1)))
-                (lake::run-task "foo" lake::*tasks*))
+    (is-error (lake::run-task "foo" lake::*tasks*)
               simple-error
               "no task.")
 
@@ -724,8 +703,7 @@
                                                       (echo "foo")))))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
-    (is-print (let ((*kernel* (make-kernel 1)))
-                (lake::run-task "foo" tasks))
+    (is-print (lake::run-task "foo" tasks)
               (format nil "foo~%")))
 
   (is-error (lake::get-task :foo nil)

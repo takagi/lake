@@ -372,9 +372,8 @@
   (%execute task-name *namespace* *tasks*))
 
 (defun %execute (task-name namespace tasks)
-  (let ((task-name1 (resolve-dependency-task-name task-name namespace))
-        (*kernel* (make-kernel 1))) ; Run task in another kernel in serial.
-    (run-task task-name1 tasks)))
+  (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
+    (run-task task-name1 tasks 1)))     ; Run task in serial in EXECUTE.
 
 
 ;;
@@ -428,8 +427,17 @@
   (or (car (member name tasks :key #'task-name :test #'string=))
       (error "No task ~S found." name)))
 
-(defun run-task (target tasks)
-  (let ((ptree (make-ptree)))
+(defun %make-kernel (worker-count)
+  ;; Just for binding *DEFAULT-PATHNAME-DEFAULTS*.
+  (make-kernel worker-count
+               :bindings `((*standard-output* . ,*standard-output*)
+                           (*error-output* . ,*error-output*)
+                           (*default-pathname-defaults* .
+                            ,*default-pathname-defaults*))))
+
+(defun run-task (target tasks &optional (jobs 1))
+  (let ((*kernel* (%make-kernel jobs))
+        (ptree (make-ptree)))
     ;; Define ptree nodes.
     (dolist (task tasks)
       (let ((task-name (intern (task-name task)))
@@ -451,13 +459,11 @@
                      ;; dependency in CALL-PTREE below.
                      (list (intern task-name1)))))))
         (ptree-fn task-name dependency
-                  (let ((verbose *verbose*)
-                        (kernel *kernel*))
+                  (let ((verbose *verbose*))
                     #'(lambda (&rest _)
                         (declare (ignore _))
                         (let ((*tasks* tasks) ; For EXECUTE function.
-                              (*verbose* verbose)
-                              (*kernel* kernel))
+                              (*verbose* verbose))
                           (execute-task task))))
                   ptree)))
     ;; Call ptree.
@@ -484,14 +490,13 @@
                   (jobs 1)
                   (verbose nil))
   (let ((*verbose* verbose)
-        (*kernel* (make-kernel jobs))
         (*tasks* nil))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile.
     (load-lakefile pathname)
     ;; Execute target task.
-    (run-task target *tasks*)))
+    (run-task target *tasks* jobs)))
 
 (defun tasks-max-width (tasks)
   (loop for task in tasks
