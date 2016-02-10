@@ -25,6 +25,13 @@ dependencies:
 test:
   override:
     - ros run -- --version
+    # Without thread support.
+    - ros -s prove -s cl-coveralls
+          -e '(progn
+               (setf *features* (remove :thread-support *features*))
+               (or (prove:run :lake-test)
+                   (uiop:quit -1)))'
+    # With thread support.
     - ros -s prove -s cl-coveralls
           -e '(or (coveralls:with-coveralls (:exclude (list "t" "quicklisp"))
                     (prove:run :lake-test))

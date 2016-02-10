@@ -653,7 +653,7 @@
               type-error
               "invalid task name.")
 
-    (is-error (lake::run-task "foo" lake::*tasks*)
+    (is-error (lake::run-task "foobar" lake::*tasks*)
               simple-error
               "no task.")
 
@@ -717,6 +717,99 @@
   (is-error (lake::get-task "foo" :foo)
             type-error
             "invalid task manager."))
+
+(subtest "traverse-tasks"
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "a" nil '("b" "c") nil #'noop)))
+    (lake::register-task task1 tasks)
+    (is (lake::traverse-tasks "a" tasks)
+        '("b" "c" "a")))
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "a" nil '("b" "c") nil #'noop))
+        (task2 (lake::make-task "b" nil '("d" "e") nil #'noop))
+        (task3 (lake::make-task "c" nil nil nil #'noop))
+        (task4 (lake::make-task "d" nil nil nil #'noop))
+        (task5 (lake::make-task "e" nil nil nil #'noop)))
+    (lake::register-task task1 tasks)
+    (lake::register-task task2 tasks)
+    (lake::register-task task3 tasks)
+    (lake::register-task task4 tasks)
+    (lake::register-task task5 tasks)
+    (is (lake::traverse-tasks "a" tasks)
+        '("d" "e" "b" "c" "a")))
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "a" nil '("a") nil #'noop)))
+    (lake::register-task task1 tasks)
+    (is-error (lake::traverse-tasks "a" tasks)
+              simple-error
+              "circular dependency."))
+
+  (is-error (lake::traverse-tasks :foo nil)
+            type-error
+            "invlaid task name.")
+
+  (is-error (lake::traverse-tasks "foo" :foo)
+            type-error
+            "invalid tasks."))
+
+#-thread-support
+(subtest "compute-dependency"
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "foo" nil '("bar") nil #'noop))
+        (task2 (lake::make-task "bar" nil nil nil #'noop)))
+    (lake::register-task task1 tasks)
+    (lake::register-task task2 tasks)
+    (is (lake::compute-dependency "foo" tasks)
+        (list task2 task1)))
+
+  (with-test-directory
+    (let ((tasks nil)
+          (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
+      (lake::register-task task1 tasks)
+      (sh "touch bar")
+      (is (lake::compute-dependency "foo" tasks)
+          (list task1))))
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
+    (lake::register-task task1 tasks)
+    (is-error (lake::compute-dependency "foo" tasks)
+              simple-error
+              "unknown task."))
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "foo" nil '("foo") nil #'noop)))
+    (lake::register-task task1 tasks)
+    (is-error (lake::compute-dependency "foo" tasks)
+              simple-error
+              "circular dependency."))
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "multi" nil '("a" "b" "c") nil #'noop))
+        (task2 (lake::make-task "a" nil '("b") nil #'noop))
+        (task3 (lake::make-task "b" nil '("c") nil #'noop))
+        (task4 (lake::make-task "c" nil nil nil #'noop)))
+    (lake::register-task task1 tasks)
+    (lake::register-task task2 tasks)
+    (lake::register-task task3 tasks)
+    (lake::register-task task4 tasks)
+    (is (lake::compute-dependency "multi" tasks)
+        (list task4 task3 task2 task1)))
+
+  (is-error (lake::compute-dependency :foo nil)
+            type-error
+            "invalid task name.")
+
+  (is-error (lake::compute-dependency "foo" :foo)
+            type-error
+            "invalid tasks."))
+
+(subtest "run-task"
+  )
 
 
 ;;
