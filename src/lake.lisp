@@ -22,6 +22,7 @@
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
+  #+thread-support
   (:import-from :lparallel
                 :*kernel*
                 :make-kernel
@@ -427,6 +428,22 @@
   (or (car (member name tasks :key #'task-name :test #'string=))
       (error "No task ~S found." name)))
 
+(defun traverse-tasks (task-name tasks)
+  (labels ((%traverse-tasks (task-name tasks history)
+             (unless (not (member task-name history :test #'string=))
+               (error "The task ~S has circular dependency." task-name))
+             (let ((history1 (cons task-name history)))
+               (reduce #'(lambda (task-name1 result)
+                           (append (%traverse-tasks task-name1 tasks history1)
+                                   result))
+                       (and (task-exists-p task-name tasks)
+                            (task-dependency
+                             (get-task task-name tasks)))
+                       :from-end t
+                       :initial-value (list task-name)))))
+    (%traverse-tasks task-name tasks nil)))
+
+#+thread-support
 (defun %make-kernel (worker-count)
   ;; Just for binding *DEFAULT-PATHNAME-DEFAULTS*.
   (make-kernel worker-count
@@ -435,6 +452,7 @@
                            (*default-pathname-defaults* .
                             ,*default-pathname-defaults*))))
 
+#+thread-support
 (defun run-task (target tasks &optional (jobs 1))
   (let ((*kernel* (%make-kernel jobs))
         (ptree (make-ptree)))
@@ -473,6 +491,29 @@
       (ptree-undefined-function-error (e)
         (error "Don't know how to build task ~A."
                (lparallel.ptree::ptree-error-id e))))))
+
+#-thread-support
+(defun compute-dependency (task-name tasks)
+  (remove-duplicates
+   (remove nil
+    (mapcar #'(lambda (task-name)
+                (cond
+                  ((task-exists-p task-name tasks)
+                   (get-task task-name tasks))
+                  ((file-exists-p
+                    (dependency-file-name task-name))
+                   ;; Noop.
+                   nil)
+                  (t (error "Don't know how to build task ~S." task-name))))
+            (traverse-tasks task-name tasks)))
+   :test #'task=
+   :from-end t))
+
+#-thread-support
+(defun run-task (target tasks &optional jobs)
+  (declare (ignore jobs))
+  (loop for task in (compute-dependency target tasks)
+     do (execute-task task)))
 
 
 ;;
