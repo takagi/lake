@@ -257,25 +257,21 @@
             simple-error
             "invalid namespace."))
 
-(subtest "namespace macro"
+(let ((lake::*tasks* nil))
 
-  (let ((lake::*tasks* nil))
-    (namespace "foo"
-      (namespace "bar"
-        (task "baz" ()
-          (echo "foo.bar.baz")))
-    (is-print (lake::%execute-task (lake::get-task "foo:bar:baz"))
-              (format nil "foo.bar.baz~%"))))
+  (namespace "foo"
+    (namespace "bar"
+      (task "baz" ()
+        (echo "foo.bar.baz"))))
+
+  (is-print (lake::run-task "foo:bar:baz" lake::*tasks*)
+            (format nil "foo.bar.baz~%"))
 
   (is-error (macroexpand '(namespace (format nil "foo")
                             (task "bar" ()
                               (echo "foo.bar"))))
             type-error
             "invalid namespace."))
-
-
-;;
-;; Base task
 
 
 ;;
@@ -326,55 +322,16 @@
             type-error
             "invalid task action."))
 
-(subtest "execute-task"
+(subtest "execute-task - task"
 
   (let ((task (lake::make-task "foo" nil nil nil #'(lambda ()
                                                      (echo "foo")))))
-    (lake::register-task task)
-    (is-print (lake::%execute-task task)
+    (is-print (lake::execute-task task)
               (format nil "foo~%")))
 
-  (let ((lake::*tasks* nil)
-        (task1 (lake::make-task "bar" '("foo") '("baz") nil
-                                 #'(lambda ()
-                                     (echo "foo:bar"))))
-        (task2 (lake::make-task "baz" '("foo") nil nil
-                                #'(lambda ()
-                                    (echo "foo:baz")))))
-    (lake::register-task task1)
-    (lake::register-task task2)
-    (is-print (lake::%execute-task task1)
-              (format nil "foo:baz~%foo:bar~%")))
-
-  (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task (lake::make-task "hello.o" nil '("hello.c") nil
-                                 #'(lambda ()
-                                     (echo "hello.o")))))
-      (lake::register-task task)
-      (sh "touch hello.c")
-      (is-print (lake::%execute-task task)
-                (format nil "hello.o~%"))))
-
-  (is-error (lake::%execute-task :foo)
+  (is-error (lake::execute-task :foo)
             simple-error
-            "invalid task.")
-
-  (let ((lake::*tasks* nil)
-        (task1 (lake::make-task "foo" nil '("bar") nil #'noop))
-        (task2 (lake::make-task "bar" nil '("foo") nil #'noop)))
-    (lake::register-task task1)
-    (lake::register-task task2)
-    (is-error (lake::%execute-task task1)
-              simple-error
-              "circular dependency."))
-
-  (let ((lake::*tasks* nil)
-        (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
-    (lake::register-task task1)
-    (is-error (lake::%execute-task task1)
-              simple-error
-              "dependency task not found.")))
+            "invalid task."))
 
 (subtest "parse-body"
 
@@ -387,19 +344,21 @@
   (is-values (lake::parse-body nil)
              '(nil nil)))
 
-(subtest "task macro"
+(let ((lake::*tasks* nil))
 
-  (let ((lake::*tasks* nil))
-    (task "foo" ()
-      "desc"
-      (echo "foo"))
-    (is-print (lake::%execute-task (lake::get-task "foo"))
-              (format nil "foo~%")))
+  (task "foo" ()
+    "desc"
+    (echo "foo"))
 
-  (is-error (macroexpand '(task (format nil "foo") ()
-                            (echo "foo")))
-            type-error
-            "invalid task name."))
+  (subtest "task macro"
+
+    (is-print (lake::run-task "foo" lake::*tasks*)
+              (format nil "foo~%"))
+
+    (is-error (macroexpand '(task (format nil "foo") ()
+                             (echo "foo")))
+              type-error
+              "invalid task name.")))
 
 
 ;;
@@ -452,8 +411,7 @@
 (subtest "file-task-out-of-date"
 
   (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+    (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
       (sh "touch foo; sleep 1; touch bar")
       (is (lake::file-task-out-of-date task)
           t)
@@ -461,15 +419,13 @@
       (is (lake::file-task-out-of-date task)
           nil)))
 
-  (let ((lake::*tasks* nil)
-        (task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+  (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
     (is-error (lake::file-task-out-of-date task)
               error
               "no target file exists."))
 
   (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+    (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
       (sh "touch foo")
       (is-error (lake::file-task-out-of-date task)
                 error
@@ -479,35 +435,36 @@
             simple-error
             "invalid file task."))
 
-(subtest "execute-task"
+(subtest "execute-task - file-task"
 
   (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task1 (lake::make-file-task "foo" nil '("bar") nil
+    (let ((task1 (lake::make-file-task "foo" nil '("bar") nil
                                        #'(lambda ()
                                            (sh "touch foo")
                                            (echo "foo")))))
       (sh "touch bar")
-      (is-print (lake::%execute-task task1)
+      (is-print (lake::execute-task task1)
                 (format nil "foo~%"))
-      (is-print (lake::%execute-task task1)
+      (is-print (lake::execute-task task1)
                 ""))))
 
-(subtest "file macro"
+(let ((lake::*tasks* nil))
 
-  (with-test-directory
-    (let ((lake::*tasks* nil))
-      (file "hello.o" ("hello.c")
-        "desc"
-        (echo "gcc -c hello.c"))
+  (file "hello.o" ("hello.c")
+    "desc"
+    (echo "gcc -c hello.c"))
+
+  (subtest "file macro"
+
+    (with-test-directory
       (sh "touch hello.c")
-      (is-print (lake::%execute-task (lake::get-task "hello.o"))
-                (format nil "gcc -c hello.c~%"))))
+      (is-print (lake::run-task "hello.o" lake::*tasks*)
+                (format nil "gcc -c hello.c~%")))
 
-  (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
-                            (echo "gcc -c hello.c")))
-            type-error
-            "invalid task name."))
+    (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
+                             (echo "gcc -c hello.c")))
+              type-error
+              "invalid task name.")))
 
 
 ;;
@@ -541,37 +498,45 @@
             type-error
             "invalid description."))
 
-(subtest "execute-task"
+(subtest "execute-task - directory task"
 
   (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task (lake::make-directory-task "dir" nil nil)))
-      (lake::register-task task)
-      (lake::%execute-task task)
+    (let ((task (lake::make-directory-task "dir" nil nil)))
+      (lake::execute-task task)
       (is (and (directory-exists-p "dir") t)
           t)))
 
   (with-test-directory
-    (let ((lake::*tasks* nil)
-          (task (lake::make-directory-task "dir" nil nil)))
-      (lake::register-task task)
+    (let ((task (lake::make-directory-task "dir" nil nil)))
       (sh "mkdir dir")
-      (lake::%execute-task task)
+      (lake::execute-task task)
       (is (and (directory-exists-p "dir") t)
           t))))
 
-(subtest "directory macro"
+(subtest "directory-task-directory-name"
 
-  (with-test-directory
-    (let ((lake::*tasks* nil))
-      (directory "dir" "desc")
-      (lake::%execute-task (lake::get-task "dir"))
-      (is (and (directory-exists-p "dir") t)
-          t)))
+  (let ((task (lake::make-directory-task "dir" '("foo") "desc")))
+    (is (lake::directory-task-directory-name task)
+        "dir"))
 
-  (is-error (macroexpand '(directory (format nil "dir")))
+  (is-error (lake::directory-task-directory-name :foo)
             type-error
-            "invalid task name."))
+            "invalid directory task."))
+
+(let ((lake::*tasks* nil))
+
+  (directory "dir" "desc")
+
+  (subtest "directory macro"
+
+    (with-test-directory
+      (lake::run-task "dir" lake::*tasks*)
+      (is (and (directory-exists-p "dir") t)
+          t))
+
+    (is-error (macroexpand '(directory (format nil "dir")))
+              type-error
+              "invalid task name.")))
 
 
 ;;
@@ -644,52 +609,65 @@
 ;;
 ;; Execute
 
-(subtest "execute"
+(let ((lake::*tasks* nil))
 
-  (let ((lake::*tasks* nil))
-    (namespace "hello"
-      (task "foo" ()
-        (echo "foo")
-        (execute "bar"))
-      (task "bar" ()
-        (echo "bar")))
-    (is-print (lake::%execute-task (lake::get-task "hello:foo"))
-              (format nil "foo~%bar~%")))
+  (namespace "hello1"
 
-  (let ((lake::*tasks* nil))
-    (namespace "hello"
-      (file "hello" ()
-        (echo "hello")
-        (execute "world"))
-      (file "world" ()
-        (echo "world")))
-    (is-print (lake::%execute-task (lake::get-task "hello:hello"))
-              (format nil "hello~%world~%")))
+    (task "foo" ()
+      (echo "foo")
+      (execute "bar"))
 
-  (let ((lake::*tasks* nil))
-    (namespace "hello"
-      (task "foo" ()
-        (echo "foo")
-        (execute ":bar")))
     (task "bar" ()
-      (echo "bar"))
-    (is-print (lake::%execute-task (lake::get-task "hello:foo"))
-              (format nil "foo~%bar~%")))
+      (echo "bar")))
 
-  (let ((lake::*namespace* nil))
-    (is-error (execute :foo)
+  (namespace "hello2"
+
+    (file "hello" ()
+      (echo "hello")
+      (execute "world"))
+
+    (file "world" ()
+      (echo "world")))
+
+  (namespace "hello3"
+
+    (task "foo" ()
+      (echo "foo")
+      (execute ":bar")))
+
+  (task "bar" ()
+    (echo "bar"))
+
+  (subtest "execute"
+
+    (is-print (lake::run-task "hello1:foo" lake::*tasks*)
+              (format nil "foo~%bar~%"))
+
+    (is-print (lake::run-task "hello2:hello" lake::*tasks*)
+              (format nil "hello~%world~%"))
+
+    (is-print (lake::run-task "hello3:foo" lake::*tasks*)
+              (format nil "foo~%bar~%"))
+
+    (is-error (lake::run-task :foo lake::*tasks*)
               type-error
-              "invalid task name."))
+              "invalid task name.")
 
-  (let ((lake::*tasks* nil)
-        (lake::*namespace* nil))
-    (is-error (execute "foo")
+    (is-error (lake::run-task "foo" lake::*tasks*)
               simple-error
-              "no task.")))
+              "no task.")
+
+    ;; (is-error (execute "bar")
+    ;;           simple-error
+    ;;           "outside task.")))
+    ))
 
 
 ;;
 ;; Task manager
+
+(subtest "register-task"
+  )
 
 (subtest "task-exists-p"
 
@@ -703,7 +681,7 @@
     (is (lake::task-exists-p "bar" tasks)
         nil))
 
-  (is-error (lake::task-exists-p :foo)
+  (is-error (lake::task-exists-p :foo nil)
             type-error
             "invalid task name.")
 
@@ -725,7 +703,7 @@
                                                       (echo "foo")))))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
-    (is-print (lake::%execute-task (lake::get-task "foo" tasks))
+    (is-print (lake::run-task "foo" tasks)
               (format nil "foo~%")))
 
   (is-error (lake::get-task :foo nil)
