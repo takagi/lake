@@ -45,14 +45,6 @@ Further detail, please see [Lakefile](#Lakefile) section and [API](#API) section
 
 ## Install
 
-**Since lake is not on Quicklisp yet, please use its local-projects feature for now.**
-
-    $ cd ~/.roswell/local-projects
-    $ git clone git@github.com:takagi/lake.git
-
-    $ cd lake
-    $ ros -l lake.asd install lake    # install LAKE command
-
 You can install lake via Quicklisp,
 
     (ql:quickload :lake)
