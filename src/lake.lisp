@@ -294,6 +294,13 @@
 ;;
 ;; Echo
 
+#+thread-support
+(let ((lock (bt:make-lock)))
+  (defun echo (string)
+    (bt:with-lock-held (lock)
+      (write-line string))))
+
+#-thread-support
 (defun echo (string)
   (write-line string))
 

@@ -58,11 +58,14 @@
 (task "multi" ("a" "b" "c")
   (echo "multi"))
 
-(task "a" ("b")
+(task "a" ()
+  (sleep 1)
   (echo "a"))
 
-(task "b" ("c")
+(task "b" ()
+  (sleep 1)
   (echo "b"))
 
 (task "c" ()
+  (sleep 1)
   (echo "c"))
