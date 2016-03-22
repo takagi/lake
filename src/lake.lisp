@@ -316,7 +316,10 @@
   (when echo
     (echo command))
   (multiple-value-bind (output error-output return-status)
-      (run-program command :output t :error-output t :ignore-error-status t)
+      (run-program command :input :interactive
+                           :output t
+                           :error-output t
+                           :ignore-error-status t)
     (declare (ignore output error-output))
     (unless (zerop return-status)
       (error "Command ~S exited with error code ~A." command return-status))))
@@ -336,7 +339,7 @@
 (defvar *ssh-identity* nil)
 
 (defparameter +ssh-control-string+
-  "ssh ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
+  "ssh -t ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
 
 (defgeneric ssh (command &key echo)
   (:documentation "Takes a string or list of strings and runs it from a shell on a remote host."))
