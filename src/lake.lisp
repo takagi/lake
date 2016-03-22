@@ -339,7 +339,7 @@
 (defvar *ssh-identity* nil)
 
 (defparameter +ssh-control-string+
-  "ssh ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
+  "ssh -t ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
 
 (defgeneric ssh (command &key echo)
   (:documentation "Takes a string or list of strings and runs it from a shell on a remote host."))
