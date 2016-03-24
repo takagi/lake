@@ -589,21 +589,25 @@
       (is-print (sh "ls foo bar")
                 (format nil "bar~%foo~%"))))
 
-  (is-error (scp :foo #P"foo" :remote #P"bar")
-            simple-error
-            "invalid scp place.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :foo #P"foo" :remote #P"bar")
+              simple-error
+              "invalid scp place."))
 
-  (is-error (scp :local :foo :remote #P"bar")
-            type-error
-            "invalid pathspec.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local :foo :remote #P"bar")
+              type-error
+              "invalid pathspec."))
 
-  (is-error (scp :local #P"foo" :foo #P"bar")
-            simple-error
-            "invalid scp place.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local #P"foo" :foo #P"bar")
+              simple-error
+              "invalid scp place."))
 
-  (is-error (scp :local #P"foo" :remote :foo)
-            type-error
-            "invalid pathspec."))
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local #P"foo" :remote :foo)
+              type-error
+              "invalid pathspec.")))
 
 
 ;;
@@ -638,6 +642,14 @@
   (task "bar" ()
     (echo "bar"))
 
+  (namespace "hello4"
+
+    (task "foo" ()
+      (execute "bar"))
+
+    (task "bar" ()
+      (ssh "echo bar")))
+
   (subtest "execute"
 
     (is-print (lake::run-task "hello1:foo" lake::*tasks*)
@@ -648,6 +660,13 @@
 
     (is-print (lake::run-task "hello3:foo" lake::*tasks*)
               (format nil "foo~%bar~%"))
+
+    (let ((*ssh-host* "localhost")
+          (*ssh-user* "`whoami`")
+          (*ssh-identity* nil))
+      (is-print (lake::run-task "hello4:foo" lake::*tasks*)
+                (format nil "bar~C~%" #\Return)
+                "Ok. - Inheriting SSH related special variables"))
 
     (is-error (lake::run-task :foo lake::*tasks*)
               type-error
