@@ -661,7 +661,7 @@
           (*ssh-user* "`whoami`")
           (*ssh-identity* nil))
       (is-print (lake::run-task "hello4:foo" lake::*tasks*)
-                (format nil "bar~%")
+                (format nil "bar~C~%" #\Return)
                 "Ok. - Inheriting SSH related special variables"))
 
     (is-error (lake::run-task :foo lake::*tasks*)
