@@ -589,21 +589,25 @@
       (is-print (sh "ls foo bar")
                 (format nil "bar~%foo~%"))))
 
-  (is-error (scp :foo #P"foo" :remote #P"bar")
-            simple-error
-            "invalid scp place.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :foo #P"foo" :remote #P"bar")
+              simple-error
+              "invalid scp place."))
 
-  (is-error (scp :local :foo :remote #P"bar")
-            type-error
-            "invalid pathspec.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local :foo :remote #P"bar")
+              type-error
+              "invalid pathspec."))
 
-  (is-error (scp :local #P"foo" :foo #P"bar")
-            simple-error
-            "invalid scp place.")
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local #P"foo" :foo #P"bar")
+              simple-error
+              "invalid scp place."))
 
-  (is-error (scp :local #P"foo" :remote :foo)
-            type-error
-            "invalid pathspec."))
+  (let ((*ssh-host* "localhost"))
+    (is-error (scp :local #P"foo" :remote :foo)
+              type-error
+              "invalid pathspec.")))
 
 
 ;;

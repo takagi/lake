@@ -332,7 +332,7 @@
 ;;
 ;; SSH
 
-(defvar *ssh-host*)
+(defvar *ssh-host* nil)
 
 (defvar *ssh-user* nil)
 
@@ -345,6 +345,8 @@
   (:documentation "Takes a string or list of strings and runs it from a shell on a remote host."))
 
 (defmethod ssh ((command string) &key echo)
+  (unless *ssh-host*
+    (error "*SSH-HOST* is not specified."))
   (let ((command1 (format nil +ssh-control-string+
                           *ssh-identity* *ssh-user* *ssh-host* command)))
     (sh command1 :echo echo)))
@@ -361,6 +363,8 @@
   (check-type pathspec (or pathname string))
   (unless (member place '(:local :remote))
     (error "The value ~S is not :local nor :remote." place))
+  (unless *ssh-host*
+    (error "*SSH-HOST* is not specified."))
   (if (eq place :remote)
       (format nil "~@[~A@~]~A:~A" *ssh-user* *ssh-host* pathspec)
       (princ-to-string pathspec)))
