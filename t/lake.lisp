@@ -638,6 +638,14 @@
   (task "bar" ()
     (echo "bar"))
 
+  (namespace "hello4"
+
+    (task "foo" ()
+      (execute "bar"))
+
+    (task "bar" ()
+      (ssh "echo bar")))
+
   (subtest "execute"
 
     (is-print (lake::run-task "hello1:foo" lake::*tasks*)
@@ -648,6 +656,13 @@
 
     (is-print (lake::run-task "hello3:foo" lake::*tasks*)
               (format nil "foo~%bar~%"))
+
+    (let ((*ssh-host* "localhost")
+          (*ssh-user* "`whoami`")
+          (*ssh-identity* nil))
+      (is-print (lake::run-task "hello4:foo" lake::*tasks*)
+                (format nil "bar~%")
+                "Ok. - Inheriting SSH related special variables"))
 
     (is-error (lake::run-task :foo lake::*tasks*)
               type-error

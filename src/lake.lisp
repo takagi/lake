@@ -487,11 +487,17 @@
                      ;; dependency in CALL-PTREE below.
                      (list (intern task-name1)))))))
         (ptree-fn task-name dependency
-                  (let ((verbose *verbose*))
+                  (let ((verbose *verbose*)
+                        (ssh-host *ssh-host*)
+                        (ssh-user *ssh-user*)
+                        (ssh-identity *ssh-identity*))
                     #'(lambda (&rest _)
                         (declare (ignore _))
                         (let ((*tasks* tasks) ; For EXECUTE function.
-                              (*verbose* verbose))
+                              (*verbose* verbose)
+                              (*ssh-host* ssh-host)
+                              (*ssh-user* ssh-user)
+                              (*ssh-identity* ssh-identity))
                           (execute-task task))))
                   ptree)))
     ;; Call ptree.
