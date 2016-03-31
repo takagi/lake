@@ -569,10 +569,10 @@
         (*ssh-identity* nil))
 
     (is-print (ssh "echo foo" :echo t)
-              (format nil "ssh -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))
+              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))
 
     (is-print (ssh '("echo" "foo") :echo t)
-              (format nil "ssh -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))))
+              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))))
 
 
 ;;
