@@ -370,7 +370,7 @@
       (princ-to-string pathspec)))
 
 (defparameter +scp-control-string+
-  "scp ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~A ~A")
+  "scp ~@[-i ~A ~]-r -o \"StrictHostKeyChecking no\" ~A ~A")
 
 (defun scp (from-place pathspec1 to-place pathspec2 &key echo)
   (let ((path1 (scp-filepath pathspec1 from-place))
