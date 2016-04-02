@@ -338,8 +338,15 @@
 
 (defvar *ssh-identity* nil)
 
+(defun escape-for-shell (string)
+  (flet ((regex-replace-all (regex replacement target-string)
+           (cl-ppcre:regex-replace-all regex target-string replacement)))
+    (regex-replace-all "\\$" "\\$"
+     (regex-replace-all "\"" "\\\""
+      (regex-replace-all "\\" "\\\\\\\\" string)))))
+
 (defparameter +ssh-control-string+
-  "ssh -t ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A ~S")
+  "ssh -q -t ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A \"~A\"")
 
 (defgeneric ssh (command &key echo)
   (:documentation "Takes a string or list of strings and runs it from a shell on a remote host."))
@@ -347,9 +354,12 @@
 (defmethod ssh ((command string) &key echo)
   (unless *ssh-host*
     (error "*SSH-HOST* is not specified."))
-  (let ((command1 (format nil +ssh-control-string+
-                          *ssh-identity* *ssh-user* *ssh-host* command)))
-    (sh command1 :echo echo)))
+  (let* ((command1 (format nil "/bin/bash -l -c \"~A\""
+                    (escape-for-shell command)))
+         (command2 (format nil +ssh-control-string+
+                           *ssh-identity* *ssh-user* *ssh-host*
+                    (escape-for-shell command1))))
+    (sh command2 :echo echo)))
 
 (defmethod ssh ((command list) &key echo)
   (let ((command1 (format nil "~{~A~^ ~}" command)))
@@ -370,7 +380,7 @@
       (princ-to-string pathspec)))
 
 (defparameter +scp-control-string+
-  "scp ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~A ~A")
+  "scp ~@[-i ~A ~]-r -o \"StrictHostKeyChecking no\" ~A ~A")
 
 (defun scp (from-place pathspec1 to-place pathspec2 &key echo)
   (let ((path1 (scp-filepath pathspec1 from-place))

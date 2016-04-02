@@ -562,6 +562,21 @@
 ;;
 ;; SSH
 
+(subtest "escape-for-shell"
+
+  (is (lake::escape-for-shell "\$PATH")
+      "\\$PATH")
+
+  (is (lake::escape-for-shell "\"foo\"")
+      "\\\"foo\\\"")
+
+  (is (lake::escape-for-shell "\\")
+      "\\\\")
+
+  (is-error (lake::escape-for-shell :foo)
+            type-error
+            "Invalid string."))
+
 (subtest "ssh"
 
   (let ((*ssh-host* "localhost")
@@ -569,10 +584,10 @@
         (*ssh-identity* nil))
 
     (is-print (ssh "echo foo" :echo t)
-              (format nil "ssh -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))
+              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"/bin/bash -l -c \\\"echo foo\\\"\"~%foo~C~%" #\Return))
 
     (is-print (ssh '("echo" "foo") :echo t)
-              (format nil "ssh -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"echo foo\"~%foo~C~%" #\Return))))
+              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"/bin/bash -l -c \\\"echo foo\\\"\"~%foo~C~%" #\Return))))
 
 
 ;;
