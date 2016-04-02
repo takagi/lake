@@ -338,6 +338,13 @@
 
 (defvar *ssh-identity* nil)
 
+(defun escape-for-shell (string)
+  (flet ((regex-replace-all (regex replacement target-string)
+           (cl-ppcre:regex-replace-all regex target-string replacement)))
+    (regex-replace-all "\\$" "\\$"
+     (regex-replace-all "\"" "\\\""
+      (regex-replace-all "\\" "\\\\\\\\" string)))))
+
 (defparameter +ssh-control-string+
   "ssh -q -t ~@[-i ~A ~]-o \"StrictHostKeyChecking no\" ~@[~A@~]~A \"~A\"")
 
@@ -347,9 +354,12 @@
 (defmethod ssh ((command string) &key echo)
   (unless *ssh-host*
     (error "*SSH-HOST* is not specified."))
-  (let ((command1 (format nil +ssh-control-string+
-                          *ssh-identity* *ssh-user* *ssh-host* command)))
-    (sh command1 :echo echo)))
+  (let* ((command1 (format nil "/bin/bash -l -c \"~A\""
+                    (escape-for-shell command)))
+         (command2 (format nil +ssh-control-string+
+                           *ssh-identity* *ssh-user* *ssh-host*
+                    (escape-for-shell command1))))
+    (sh command2 :echo echo)))
 
 (defmethod ssh ((command list) &key echo)
   (let ((command1 (format nil "~{~A~^ ~}" command)))

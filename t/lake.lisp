@@ -562,6 +562,21 @@
 ;;
 ;; SSH
 
+(subtest "escape-for-shell"
+
+  (is (lake::escape-for-shell "\$PATH")
+      "\\$PATH")
+
+  (is (lake::escape-for-shell "\"foo\"")
+      "\\\"foo\\\"")
+
+  (is (lake::escape-for-shell "\\")
+      "\\\\")
+
+  (is-error (lake::escape-for-shell :foo)
+            type-error
+            "Invalid string."))
+
 (subtest "ssh"
 
   (let ((*ssh-host* "localhost")
