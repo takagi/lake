@@ -45,7 +45,7 @@ exec ros -m lake -Q -- $0 "$@"
                         ,@(when pathname
                             `(:pathname ,pathname)))))
           (if targets
-              (loop for target in targets
+              (loop for target in (nreverse targets)
                  do (apply #'lake:lake :target target params))
               (apply #'lake:lake params))))
     (error (e)
