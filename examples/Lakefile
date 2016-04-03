@@ -1,0 +1,63 @@
+#|-*- mode:lisp -*-|#
+(in-package :cl-user)
+(defpackage :lake.user
+  (:use :cl :lake :cl-syntax)
+  (:shadowing-import-from :lake
+                          :directory))
+(in-package :lake.user)
+
+(use-syntax :interpol)
+
+(setf *ssh-host* "example.com")
+(setf *ssh-user* "ubuntu")
+
+
+;;
+;; Default
+
+(task "default" ()
+  "Install Roswell with setup and teardown."
+  (sh "lake setup roswell teardown"))
+
+;;
+;; Setup / Teardown
+
+(task "setup" ()
+  "Setup."
+  ;; Put authorized_keys.
+  (echo "Ensure that the remote host has ~/.ssh directory.")
+  (scp :local "~/.ssh/id_rsa.pub" :remote "~/.ssh/authorized_keys")
+  ;; Enable sudoers.
+  (ssh #?"sudo sh -c 'echo \"${*ssh-user*} ALL = NOPASSWD: ALL\" > /etc/sudoers.d/lake'")
+  ;; Update package lists.
+  (ssh "sudo apt-get update"))
+
+(task "teardown" ()
+  "Teardown."
+  ;; Disable sudoers.
+  (ssh "sudo rm /etc/sudoers.d/lake")
+  ;; Remove authorized_keys.
+  (ssh "rm ~/.ssh/authorized_keys"))
+
+;;
+;; git
+
+(task "git" ()
+  "Install git."
+  (ssh "sudo apt-get install -y git"))
+
+;;
+;; Roswell
+
+(task "roswell" ("git")
+  "Install Roswell."
+  ;; Install requirements.
+  (ssh "sudo apt-get install -y build-essential automake libcurl4-openssl-dev")
+  ;; Clone Roswell.
+  (ssh "git clone -b release https://github.com/roswell/roswell.git")
+  ;; Install Roswell.
+  (ssh "cd roswell && sh ./bootstrap && ./configure && make && sudo make install")
+  (ssh "ros setup")
+  (ssh "ros -Q -e '(ql:quickload :quicklisp-slime-helper)' -q")
+  ;; Clean directory.
+  (ssh "rm -rf roswell"))
