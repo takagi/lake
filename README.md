@@ -240,6 +240,8 @@ As `ssh` function above, `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should 
 
     EXECUTE target
 
+**DEPRECATED**
+
 Executes a task specified with `target` as a string within another. The name of the target task is resolved as well as `task` macro's dependency list in both relative and absolute manner.
 
     (task "hello" ("hello.c")
