@@ -394,6 +394,7 @@
 ;; Execute
 
 (defun execute (task-name)
+  (warn "EXECUTE function is deprecated.")
   (%execute task-name *namespace* *tasks*))
 
 (defun %execute (task-name namespace tasks)
