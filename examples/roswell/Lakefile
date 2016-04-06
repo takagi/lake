@@ -8,8 +8,8 @@
 
 (use-syntax :interpol)
 
-(setf *ssh-host* "example.com")
-(setf *ssh-user* "ubuntu")
+(setf *ssh-host* (ros:getenv "HOST"))
+(setf *ssh-user* (ros:getenv "USER"))
 
 
 ;;
