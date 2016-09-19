@@ -1,6 +1,6 @@
 machine:
   environment:
-    LISP: sbcl
+    LISP: sbcl-bin
     PATH: ~/.roswell/bin:$PATH
     COVERALLS: true
 
