@@ -478,7 +478,7 @@
                             ,*default-pathname-defaults*))))
 
 #+thread-support
-(defun run-task (target tasks &optional (jobs 1))
+(defun run-task-concurrent (target tasks jobs)
   (let ((*kernel* (%make-kernel jobs))
         (ptree (make-ptree)))
     ;; Define ptree nodes.
@@ -523,7 +523,6 @@
         (error "Don't know how to build task ~A."
                (lparallel.ptree::ptree-error-id e))))))
 
-#-thread-support
 (defun compute-dependency (task-name tasks)
   (remove-duplicates
    (remove nil
@@ -540,11 +539,17 @@
    :test #'task=
    :from-end t))
 
-#-thread-support
-(defun run-task (target tasks &optional jobs)
-  (declare (ignore jobs))
+(defun run-task-serial (target tasks)
   (loop for task in (compute-dependency target tasks)
      do (execute-task task)))
+
+(defun run-task (target tasks &optional (jobs 1))
+  #+thread-support
+  (if (< 1 jobs)
+      (run-task-concurrent target tasks jobs)
+      (run-task-serial target tasks))
+  #-thread-support
+  (run-task-serial target tasks))
 
 
 ;;
