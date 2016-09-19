@@ -789,7 +789,6 @@
             type-error
             "invalid tasks."))
 
-#-thread-support
 (subtest "compute-dependency"
 
   (let ((tasks nil)
