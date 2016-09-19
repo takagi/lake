@@ -842,7 +842,22 @@
             "invalid tasks."))
 
 (subtest "run-task"
-  )
+
+  (let ((tasks nil)
+        (task1 (lake::make-task "a" nil '("b" "c" "d" "e") nil #'noop))
+        (task2 (lake::make-task "b" nil nil nil #'noop))
+        (task3 (lake::make-task "c" nil nil nil #'noop))
+        (task4 (lake::make-task "d" nil nil nil #'noop))
+        (task5 (lake::make-task "e" nil nil nil #'noop)))
+    (lake::register-task task1 tasks)
+    (lake::register-task task2 tasks)
+    (lake::register-task task3 tasks)
+    (lake::register-task task4 tasks)
+    (lake::register-task task5 tasks)
+    ;; Test serial execution.
+    (ok (null (lake::run-task "a" tasks 1)))
+    ;; Test concurrent execution.
+    (ok (null (lake::run-task "a" tasks 2)))))
 
 
 ;;
