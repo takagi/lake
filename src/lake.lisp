@@ -393,13 +393,14 @@
 ;;
 ;; Execute
 
-(defun execute (task-name)
-  (warn "EXECUTE function is deprecated.")
-  (%execute task-name *namespace* *tasks*))
+(defvar *jobs* 1)
 
-(defun %execute (task-name namespace tasks)
+(defun execute (task-name)
+  (%execute task-name *namespace* *tasks* *jobs*))
+
+(defun %execute (task-name namespace tasks jobs)
   (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
-    (run-task task-name1 tasks 1)))     ; Run task in serial in EXECUTE.
+    (run-task task-name1 tasks jobs)))
 
 
 ;;
@@ -508,7 +509,8 @@
                         (ssh-identity *ssh-identity*))
                     #'(lambda (&rest _)
                         (declare (ignore _))
-                        (let ((*tasks* tasks) ; For EXECUTE function.
+                        (let ((*tasks* tasks) ; for EXECUTE function
+                              (*jobs* jobs)   ; for EXECUTE function
                               (*verbose* verbose)
                               (*ssh-host* ssh-host)
                               (*ssh-user* ssh-user)
@@ -540,8 +542,9 @@
    :from-end t))
 
 (defun run-task-serial (target tasks)
-  (loop for task in (compute-dependency target tasks)
-     do (execute-task task)))
+  (let ((*tasks* tasks))                ; for EXECUTE function
+    (loop for task in (compute-dependency target tasks)
+       do (execute-task task))))
 
 (defun run-task (target tasks &optional (jobs 1))
   #+thread-support

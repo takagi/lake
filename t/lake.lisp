@@ -665,7 +665,7 @@
     (task "bar" ()
       (ssh "echo bar")))
 
-  (subtest "execute"
+  (subtest "execute-serial"
 
     (is-print (lake::run-task "hello1:foo" lake::*tasks*)
               (format nil "foo~%bar~%"))
@@ -695,6 +695,38 @@
     ;;           simple-error
     ;;           "outside task.")))
     ))
+
+(subtest "execute-concurrent"
+
+  (let ((tasks nil)
+        (result nil))
+
+    ;; Task A
+    (let ((task (lake::make-task "a" nil nil nil
+                 #'(lambda () (execute "b")))))
+      (lake::register-task task tasks))
+
+    ;; Task B
+    (let ((task (lake::make-task "b" nil '("c" "d") nil
+                 #'(lambda () nil))))
+      (lake::register-task task tasks))
+
+    ;; Task C
+    (let ((task (lake::make-task "c" nil nil nil
+                 #'(lambda ()
+                     (sleep 1)
+                     (push :c result)))))
+      (lake::register-task task tasks))
+
+    ;; Task D
+    (let ((task (lake::make-task "d" nil nil nil
+                 #'(lambda ()
+                     (push :d result)))))
+      (lake::register-task task tasks))
+
+    ;; Test that result is pushed in the order of :c and :d.
+    (lake::run-task "a" tasks 2)
+    (is result '(:c :d))))
 
 
 ;;
