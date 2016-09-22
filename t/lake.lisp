@@ -696,6 +696,7 @@
     ;;           "outside task.")))
     ))
 
+#+thread-support
 (subtest "execute-concurrent"
 
   (let ((tasks nil)
