@@ -272,7 +272,10 @@
         "desc")
     (is-print (funcall (lake::task-action task))
               (format nil "foo~%")
-              "valid task-action."))
+              "base case 1.")
+    (is-print (print-object task *standard-output*)
+              "#<TASK foo:bar>"
+              "base case 2."))
 
   (is-error (lake::make-task :foo nil nil nil #'noop)
             type-error

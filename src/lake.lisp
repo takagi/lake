@@ -152,7 +152,7 @@
            (task-name task2)))
 
 (defmethod print-object ((task task) stream)
-  (print-unreadable-object (task stream :type t :identity t)
+  (print-unreadable-object (task stream :type t :identity nil)
     (princ (task-name task) stream)))
 
 (defun dependency-file-name (task-name)
