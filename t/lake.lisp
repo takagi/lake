@@ -603,7 +603,11 @@
               (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"/bin/bash -l -c \\\"echo foo\\\"\"~%foo~C~%" #\Return))
 
     (is-print (ssh '("echo" "foo") :echo t)
-              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"/bin/bash -l -c \\\"echo foo\\\"\"~%foo~C~%" #\Return))))
+              (format nil "ssh -q -t -o \"StrictHostKeyChecking no\" `whoami`@localhost \"/bin/bash -l -c \\\"echo foo\\\"\"~%foo~C~%" #\Return)))
+
+  (is-error (ssh '("echo" "foo"))
+            simple-error
+            "*SSH-HOST* not specified."))
 
 
 ;;
@@ -638,7 +642,11 @@
   (let ((*ssh-host* "localhost"))
     (is-error (scp :local #P"foo" :remote :foo)
               type-error
-              "invalid pathspec.")))
+              "invalid pathspec."))
+
+  (is-error (scp :local #P"foo" :remote :foo)
+            simple-error
+            "*SSH-HOST* not specified."))
 
 
 ;;
