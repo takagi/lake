@@ -393,28 +393,19 @@
 ;; GETENV
 
 (defun getenv (name &optional default)
-  #+cmu
-  (let ((x (assoc name ext:*environment-list*
-                  :test #'string=)))
-    (if x (cdr x) default))
-  #-cmu
-  (or
-   #+allegro (sys:getenv name)
-   #+clisp (ext:getenv name)
-   #+ecl (si:getenv name)
-   #+sbcl (sb-unix::posix-getenv name)
-   #+lispworks (lispworks:environment-variable name)
-   default))
+  (handler-case
+      (uiop:getenv name)
+    (error () default)))
+
+
+;;
+;; *PATH*
 
 (defun split-by-colon (string)
   (loop for i = 0 then (1+ j)
      as j = (position #\: string :start i)
      collect (subseq string i j)
      while j))
-
-
-;;
-;; *PATH*
 
 (defvar *path*
   (mapcar #'cl:directory (split-by-colon (getenv "PATH"))))
