@@ -3,10 +3,10 @@
   (:use :cl)
   (:export :lake
            :display-tasks
+           :execute
            :namespace
            :task
            :file
-           :directory
            :echo
            :sh
            :*ssh-host*
@@ -14,7 +14,6 @@
            :*ssh-identity*
            :ssh
            :scp
-           :execute
            :getenv
            :*path*)
   (:shadow :directory)
@@ -22,6 +21,10 @@
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
+  (:import-from :uiop
+                :getcwd
+                :file-exists-p
+                :run-program)
   #+thread-support
   (:import-from :lparallel
                 :*kernel*
@@ -31,19 +34,12 @@
                 :call-ptree
                 :task-handler-bind
                 :ptree-undefined-function-error
-                :invoke-transfer-error)
-  (:import-from :uiop
-                :getcwd
-                :run-program
-                :file-exists-p))
+                :invoke-transfer-error))
 (in-package :lake)
 
 
 ;;
 ;; Utilities
-
-(defun last1 (list)
-  (car (last list)))
 
 (defun valid-name-part-p (string)
   (check-type string string)
@@ -68,7 +64,7 @@
 
 
 ;;
-;; FQTN - Fully qualified task name
+;; FQTN - Fully qualified task names
 
 (defun valid-fqtn-p (string)
   (check-type string string)
@@ -78,25 +74,20 @@
 (defun fqtn-namespace (fqtn)
   (unless (valid-fqtn-p fqtn)
     (error "The value ~S is an invalid FQTN." fqtn))
-  (format nil "~{~A:~}"
-   (butlast
+  (cdr
+   (nreverse
     (split-sequence #\: fqtn))))
 
 (defun fqtn-endname (fqtn)
   (unless (valid-fqtn-p fqtn)
     (error "The value ~S is an invalid FQTN." fqtn))
-  (last1 (split-sequence #\: fqtn)))
+  (car
+   (nreverse
+    (split-sequence #\: fqtn))))
 
 
 ;;
 ;; Namespace
-
-(defvar *namespace* nil)
-
-(defmacro namespace (namespace &body body)
-  (check-type namespace string)
-  `(let ((*namespace* (cons ,namespace *namespace*)))
-     ,@body))
 
 (defun valid-task-name-p (task-name)
   (valid-name-part-p task-name))
@@ -104,30 +95,34 @@
 (defun valid-namespace-p (namespace)
   (every #'valid-name-part-p namespace))
 
-(defun resolve-task-name (task-name namespace)
-  (unless (valid-task-name-p task-name)
-    (error "The value ~S is an invalid task name." task-name))
+(defun valid-dependency-task-name-p (name)
+  (check-type name string)
+  (and (string/= name "")
+       (if (char= #\: (aref name 0))
+           (every #'valid-name-part-p
+            (split-sequence #\: (subseq name 1)))
+           (every #'valid-name-part-p
+            (split-sequence #\: name)))))
+
+(defun resolve-task-name (name namespace)
+  (unless (valid-task-name-p name)
+    (error "The value ~S is an invalid task name." name))
   (unless (valid-namespace-p namespace)
     (error "The value ~S is an invalid namespace." namespace))
-  (format nil "~{~A:~}~A" (reverse namespace) task-name))
+  (format nil "~{~A:~}~A" (reverse namespace) name))
 
-(defun valid-dependency-task-name-p (task-name)
-  (check-type task-name string)
-  (and (string/= task-name "")
-       (if (char= #\: (aref task-name 0))
-           (every #'valid-name-part-p
-            (split-sequence #\: (subseq task-name 1)))
-           (every #'valid-name-part-p
-            (split-sequence #\: task-name)))))
-
-(defun resolve-dependency-task-name (task-name namespace)
-  (unless (valid-dependency-task-name-p task-name)
-    (error "The value ~S is an invalid task name." task-name))
+(defun resolve-dependency-task-name (name namespace)
+  (unless (valid-dependency-task-name-p name)
+    (error "The value ~S is an invalid task name." name))
   (unless (valid-namespace-p namespace)
     (error "The value ~S is an invalid namespace." namespace))
-  (if (char= #\: (aref task-name 0))
-      (subseq task-name 1)
-      (format nil "~{~A:~}~A" (reverse namespace) task-name)))
+  (if (char= #\: (aref name 0))
+      (subseq name 1)
+      (format nil "~{~A:~}~A" (reverse namespace) name)))
+
+(defun resolve-dependency-task-names (dependency namespace)
+  (loop for name in dependency
+     collect (resolve-dependency-task-name name namespace)))
 
 
 ;;
@@ -135,33 +130,30 @@
 
 (defclass task ()
   ((name :initarg :name :reader task-name)
+   (namespace :initarg :namespace :reader task-namespace)
    (dependency :initarg :dependency :reader task-dependency)
    (description :initarg :description :reader task-description)
    (action :initarg :action :reader task-action)))
 
+(defun make-task (name namespace dependency desc action)
+  (check-type desc (or string null))
+  (check-type action function)
+  (let ((name1 (resolve-task-name name namespace))
+        (dependency1 (resolve-dependency-task-names dependency namespace)))
+    (make-instance 'task :name name1
+                         :namespace namespace
+                         :dependency dependency1
+                         :description desc
+                         :action action)))
+
 (defun task= (task1 task2)
-  ;; Now tasks with same names are not permitted.
+  ;; Now tasks with the same name are not permitted.
   (string= (task-name task1)
            (task-name task2)))
 
 (defmethod print-object ((task task) stream)
   (print-unreadable-object (task stream :type t :identity t)
     (princ (task-name task) stream)))
-
-(defun make-task (name namespace dependency desc action)
-  (check-type desc (or string null))
-  (check-type action function)
-  (let ((name1 (resolve-task-name name namespace))
-        (dependency1 (loop for task-name in dependency
-                        collect
-                          (resolve-dependency-task-name task-name namespace)))
-        (action1 #'(lambda ()
-                     (let ((*namespace* namespace))
-                       (funcall action)))))
-    (make-instance 'task :name name1
-                         :dependency dependency1
-                         :description desc
-                         :action action1)))
 
 (defun dependency-file-name (task-name)
   (fqtn-endname task-name))
@@ -177,27 +169,6 @@
   (verbose "done." t)
   (values))
 
-(defun parse-body (forms)
-  (flet ((desc-p (form rest)
-           (and (stringp form)
-                rest)))
-    (if forms
-        (destructuring-bind (form1 . rest) forms
-            (if (desc-p form1 rest)
-                (values rest form1)
-                (values forms nil)))
-        (values nil nil))))
-
-(defvar *tasks* nil)
-
-(defmacro task (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-task ,name *namespace* ',dependency ,desc
-                               #'(lambda ()
-                                   ,@forms))
-                    *tasks*)))
-
 
 ;;
 ;; File task
@@ -208,17 +179,12 @@
   (check-type desc (or string null))
   (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
-        (dependency1 (loop for task-name in dependency
-                        collect
-                          (resolve-dependency-task-name task-name
-                                                        namespace)))
-        (action1 #'(lambda ()
-                     (let ((*namespace* namespace))
-                       (funcall action)))))
+        (dependency1 (resolve-dependency-task-names dependency namespace)))
     (make-instance 'file-task :name name1
+                              :namespace namespace
                               :dependency dependency1
                               :description desc
-                              :action action1)))
+                              :action action)))
 
 (defun file-task-file-name (file-task)
   (fqtn-endname (task-name file-task)))
@@ -228,8 +194,8 @@
 
 (defun file-task-out-of-date (file-task)
   (let ((stamp (file-timestamp (file-task-file-name file-task))))
-    (loop for task-name in (task-dependency file-task)
-       if (< stamp (file-timestamp (fqtn-endname task-name)))
+    (loop for name in (task-dependency file-task)
+       if (< stamp (file-timestamp (fqtn-endname name)))
        return t)))
 
 (defun file-task-to-be-executed-p (file-task)
@@ -250,14 +216,6 @@
       (verbose "skipped." t))
   (values))
 
-(defmacro file (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-file-task ,name *namespace* ',dependency ,desc
-                                    #'(lambda ()
-                                        ,@forms))
-                    *tasks*)))
-
 
 ;;
 ;; Directory task
@@ -272,18 +230,59 @@
 (defun make-directory-task (name namespace desc)
   (check-type desc (or string null))
   (let ((name1 (resolve-task-name name namespace))
-        (action1 #'(lambda ()
-                     (let ((pathspec
-                            (ensure-directory-pathspec name)))
-                       (ensure-directories-exist pathspec)))))
+        (action #'(lambda ()
+                    (let ((pathspec
+                           (ensure-directory-pathspec name)))
+                      (ensure-directories-exist pathspec)))))
     (make-instance 'directory-task :name name1
+                                   :namespace nil
                                    :dependency nil
                                    :description desc
-                                   :action action1)))
+                                   :action action)))
 
 (defun directory-task-directory-name (directory-task)
   (check-type directory-task directory-task)
   (fqtn-endname (task-name directory-task)))
+
+
+;;
+;; Macros
+
+(defvar *tasks* nil)
+
+(defvar *namespace* nil)
+
+(defmacro namespace (namespace &body body)
+  (check-type namespace string)
+  `(let ((*namespace* (cons ,namespace *namespace*)))
+     ,@body))
+
+(defun parse-body (forms)
+  (flet ((desc-p (form rest)
+           (and (stringp form)
+                rest)))
+    (if forms
+        (destructuring-bind (form1 . rest) forms
+            (if (desc-p form1 rest)
+                (values rest form1)
+                (values forms nil)))
+        (values nil nil))))
+
+(defmacro task (name dependency &body body)
+  (check-type name string)
+  (multiple-value-bind (forms desc) (parse-body body)
+    `(register-task (make-task ,name *namespace* ',dependency ,desc
+                               #'(lambda ()
+                                   ,@forms))
+                    *tasks*)))
+
+(defmacro file (name dependency &body body)
+  (check-type name string)
+  (multiple-value-bind (forms desc) (parse-body body)
+    `(register-task (make-file-task ,name *namespace* ',dependency ,desc
+                                    #'(lambda ()
+                                        ,@forms))
+                    *tasks*)))
 
 (defmacro directory (name &optional desc)
   (check-type name string)
@@ -391,19 +390,6 @@
 
 
 ;;
-;; Execute
-
-(defvar *jobs* 1)
-
-(defun execute (task-name)
-  (%execute task-name *namespace* *tasks* *jobs*))
-
-(defun %execute (task-name namespace tasks jobs)
-  (let ((task-name1 (resolve-dependency-task-name task-name namespace)))
-    (run-task task-name1 tasks jobs)))
-
-
-;;
 ;; GETENV
 
 (defun getenv (name &optional default)
@@ -454,20 +440,11 @@
   (or (car (member name tasks :key #'task-name :test #'string=))
       (error "No task ~S found." name)))
 
-(defun traverse-tasks (task-name tasks)
-  (labels ((%traverse-tasks (task-name tasks history)
-             (unless (not (member task-name history :test #'string=))
-               (error "The task ~S has circular dependency." task-name))
-             (let ((history1 (cons task-name history)))
-               (reduce #'(lambda (task-name1 result)
-                           (append (%traverse-tasks task-name1 tasks history1)
-                                   result))
-                       (and (task-exists-p task-name tasks)
-                            (task-dependency
-                             (get-task task-name tasks)))
-                       :from-end t
-                       :initial-value (list task-name)))))
-    (%traverse-tasks task-name tasks nil)))
+(defvar *context-tasks*)
+
+(defvar *context-namespace*)
+
+(defvar *context-jobs*)
 
 #+thread-support
 (defun %make-kernel (worker-count)
@@ -484,33 +461,35 @@
         (ptree (make-ptree)))
     ;; Define ptree nodes.
     (dolist (task tasks)
-      (let ((task-name (intern (task-name task)))
+      (let ((name (intern (task-name task)))
             (dependency
-             (loop for task-name1 in (task-dependency task)
+             (loop for name1 in (task-dependency task)
                 append
                   (cond
-                    ((task-exists-p task-name1 tasks)
-                     (list (intern task-name1)))
+                    ((task-exists-p name1 tasks)
+                     (list (intern name1)))
                     ((file-exists-p
-                      (dependency-file-name task-name1))
-                     ;; In case the task is not defined but file of the
+                      (dependency-file-name name1))
+                     ;; In case that the task is not defined but file of the
                      ;; dependency name exists, remove it from CALL-PTREE's
                      ;; dependency computing.
                      nil)
                     (t
-                     ;; In case how to build a task is unkown, here append it
-                     ;; to dependency list to raise an error on computing
+                     ;; In case that how to build a task is unkown, here append
+                     ;; it to dependency list to raise an error on computing
                      ;; dependency in CALL-PTREE below.
-                     (list (intern task-name1)))))))
-        (ptree-fn task-name dependency
-                  (let ((verbose *verbose*)
+                     (list (intern name1)))))))
+        (ptree-fn name dependency
+                  (let ((namespace (task-namespace task))
+                        (verbose *verbose*)
                         (ssh-host *ssh-host*)
                         (ssh-user *ssh-user*)
                         (ssh-identity *ssh-identity*))
                     #'(lambda (&rest _)
                         (declare (ignore _))
-                        (let ((*tasks* tasks) ; for EXECUTE function
-                              (*jobs* jobs)   ; for EXECUTE function
+                        (let ((*context-tasks* tasks)
+                              (*context-namespace* namespace)
+                              (*context-jobs* jobs)
                               (*verbose* verbose)
                               (*ssh-host* ssh-host)
                               (*ssh-user* ssh-user)
@@ -525,28 +504,47 @@
         (error "Don't know how to build task ~A."
                (lparallel.ptree::ptree-error-id e))))))
 
-(defun compute-dependency (task-name tasks)
+(defun traverse-tasks (name tasks)
+  (labels ((%traverse-tasks (name tasks history)
+             (unless (not (member name history :test #'string=))
+               (error "The task ~S has circular dependency." name))
+             (let ((history1 (cons name history)))
+               (reduce #'(lambda (name1 result)
+                           (append (%traverse-tasks name1 tasks history1)
+                                   result))
+                       (and (task-exists-p name tasks)
+                            (task-dependency
+                             (get-task name tasks)))
+                       :from-end t
+                       :initial-value (list name)))))
+    (%traverse-tasks name tasks nil)))
+
+(defun compute-dependency (name tasks)
   (remove-duplicates
    (remove nil
-    (mapcar #'(lambda (task-name)
+    (mapcar #'(lambda (name)
                 (cond
-                  ((task-exists-p task-name tasks)
-                   (get-task task-name tasks))
+                  ((task-exists-p name tasks)
+                   (get-task name tasks))
                   ((file-exists-p
-                    (dependency-file-name task-name))
+                    (dependency-file-name name))
                    ;; Noop.
                    nil)
-                  (t (error "Don't know how to build task ~S." task-name))))
-            (traverse-tasks task-name tasks)))
+                  (t (error "Don't know how to build task ~S." name))))
+            (traverse-tasks name tasks)))
    :test #'task=
    :from-end t))
 
 (defun run-task-serial (target tasks)
-  (let ((*tasks* tasks))                ; for EXECUTE function
+  (let ((*context-tasks* tasks)
+        (*context-jobs* 1))
     (loop for task in (compute-dependency target tasks)
-       do (execute-task task))))
+       do (let ((*context-namespace* (task-namespace task)))
+            (execute-task task)))))
 
 (defun run-task (target tasks &optional (jobs 1))
+  #-thread-support
+  (declare (ignore jobs))
   #+thread-support
   (if (< 1 jobs)
       (run-task-concurrent target tasks jobs)
@@ -554,9 +552,13 @@
   #-thread-support
   (run-task-serial target tasks))
 
+(defun execute (name)
+  (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
+    (run-task name1 *context-tasks* *context-jobs*)))
+
 
 ;;
-;; lake
+;; Lake
 
 (defun get-lakefile-pathname ()
   (or (probe-file (merge-pathnames "Lakefile" (getcwd)))
