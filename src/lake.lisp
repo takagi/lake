@@ -7,6 +7,7 @@
            :namespace
            :task
            :file
+           :directory
            :echo
            :sh
            :*ssh-host*
