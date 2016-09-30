@@ -1007,18 +1007,18 @@
   (let ((tasks nil)
         (result nil))
     ;; Register task A.
-    (let ((task (lake::make-task "a" nil '("b" "c") nil #'noop)))
+    (let ((task (lake::make-task "a" nil nil '("b" "c") nil #'noop)))
       (lake::register-task task tasks))
     ;; Register task B.
-    (let ((task (lake::make-task "b" nil nil nil
-                                          #'(lambda ()
-                                              (sleep 1)
-                                              (push :b result)))))
+    (let ((task (lake::make-task "b" nil nil nil nil
+                                 #'(lambda ()
+                                     (sleep 1)
+                                     (push :b result)))))
       (lake::register-task task tasks))
     ;; Register task C.
-    (let ((task (lake::make-task "c" nil nil nil
-                                          #'(lambda ()
-                                              (push :c result)))))
+    (let ((task (lake::make-task "c" nil nil nil nil
+                                 #'(lambda ()
+                                     (push :c result)))))
       (lake::register-task task tasks))
     ;; Test serial run.
     (lake::run-task "a" tasks 1)

@@ -463,6 +463,8 @@
 
 (defvar *context-namespace*)
 
+(defvar *context-plist*)
+
 (defvar *context-jobs*)
 
 (defun get-environment-variable (name)
@@ -492,7 +494,7 @@
                             ,*default-pathname-defaults*))))
 
 #+thread-support
-(defun run-task-concurrent (target tasks jobs)
+(defun run-task-concurrent (target tasks plist jobs)
   (let ((*kernel* (%make-kernel jobs))
         (ptree (make-ptree)))
     ;; Define ptree nodes.
@@ -524,13 +526,15 @@
                     #'(lambda (&rest _)
                         (declare (ignore _))
                         (let ((*context-tasks* tasks)
+                              (*context-plist* plist)
                               (*context-namespace* namespace)
                               (*context-jobs* jobs)
                               (*verbose* verbose)
                               (*ssh-host* ssh-host)
                               (*ssh-user* ssh-user)
-                              (*ssh-identity* ssh-identity))
-                          (execute-task task))))
+                              (*ssh-identity* ssh-identity)
+                              (args (get-task-arguments task plist)))
+                          (execute-task task args))))
                   ptree)))
     ;; Call ptree.
     (handler-case
@@ -571,22 +575,24 @@
    :test #'task=
    :from-end t))
 
-(defun run-task-serial (target tasks)
+(defun run-task-serial (target tasks plist)
   (let ((*context-tasks* tasks)
+        (*context-plist* plist)
         (*context-jobs* 1))
     (loop for task in (compute-dependency target tasks)
-       do (let ((*context-namespace* (task-namespace task)))
-            (execute-task task)))))
+       do (let ((*context-namespace* (task-namespace task))
+                (args (get-task-arguments task plist)))
+            (execute-task task args)))))
 
-(defun run-task (target tasks &optional (jobs 1))
+(defun %run-task (target tasks plist jobs)
   #-thread-support
   (declare (ignore jobs))
   #+thread-support
   (if (< 1 jobs)
-      (run-task-concurrent target tasks jobs)
-      (run-task-serial target tasks))
+      (run-task-concurrent target tasks plist jobs)
+      (run-task-serial target tasks plist))
   #-thread-support
-  (run-task-serial target tasks))
+  (run-task-serial target tasks plist))
 
 (defun parse-args (string result)
   (cl-ppcre:register-groups-bind (arg remaining-args)
@@ -608,6 +614,20 @@
     (if name
         (values name args)
         (values string nil))))
+
+(defun construct-plist (name args tasks)
+  (let* ((task (get-task name tasks))
+         (task-args (mapcar #'car
+                     (mapcar #'ensure-pair
+                      (task-arguments task)))))
+    (loop for arg in args
+          for task-arg in task-args
+       append (list task-arg arg))))
+
+(defun run-task (target tasks &optional (jobs 1))
+  (multiple-value-bind (name args) (parse-target target)
+    (let ((plist (construct-plist name args tasks)))
+      (%run-task name tasks plist jobs))))
 
 (defun execute (name)
   (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
