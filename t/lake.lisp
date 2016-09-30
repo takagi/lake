@@ -31,6 +31,25 @@
            (sh "rm -rf dir")
            (chdir ,olddir))))))
 
+#+ros.init
+(defmacro with-environment-variable ((var value) &body body)
+  (with-gensyms (orig-env)
+    `(let ((,orig-env (ros:getenv ,var)))
+       (ros:setenv ,var ,value)
+       (unwind-protect (progn ,@body)
+         (if ,orig-env
+             (ros:setenv ,var ,orig-env)
+             (ros:unsetenv ,var))))))
+
+#+ros.init
+(defmacro with-environment-variables (pairs &body body)
+  (if pairs
+      (destructuring-bind (pair . rest) pairs
+        `(with-environment-variable ,pair
+           (with-environment-variables ,rest
+             ,@body)))
+      `(progn ,@body)))
+
 
 ;;
 ;; Utilities
@@ -760,6 +779,30 @@
   (is-error (lake::get-task "foo" :foo)
             type-error
             "invalid task manager."))
+
+(subtest "get-environment-variable"
+
+  #+ros.init
+  (with-environment-variables (("FOO_BAR" "123"))
+    (is (lake::get-environment-variable "FOO_BAR")
+        "123"))
+
+  #+ros.init
+  (with-environment-variables (("foo_bar" "123"))
+    (is (lake::get-environment-variable "FOO_BAR")
+        "123"))
+
+  #+ros.init
+  (with-environment-variables (("Foo_Bar" "123"))
+    (is (lake::get-environment-variable "Foo_Bar")
+        nil))
+
+  (is (lake::get-environment-variable "Foo_Bar")
+      nil)
+
+  (is-error (lake::get-environment-variable :foo)
+            type-error
+            "invalid name."))
 
 (subtest "traverse-tasks"
 

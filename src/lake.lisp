@@ -459,6 +459,11 @@
 
 (defvar *context-jobs*)
 
+(defun get-environment-variable (name)
+  (check-type name string)
+  (or (uiop:getenv (string-upcase name))
+      (uiop:getenv (string-downcase name))))
+
 #+thread-support
 (defun %make-kernel (worker-count)
   ;; Just for binding *DEFAULT-PATHNAME-DEFAULTS*.
