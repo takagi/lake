@@ -257,6 +257,7 @@
                       (ensure-directories-exist pathspec)))))
     (make-instance 'directory-task :name name1
                                    :namespace nil
+                                   :arguments nil
                                    :dependency nil
                                    :description desc
                                    :action action)))
