@@ -1104,21 +1104,21 @@
   (let ((tasks nil)
         (result nil))
     ;; Register task A.
-    (let ((task (lake::make-task "a" nil nil nil
+    (let ((task (lake::make-task "a" nil nil nil nil
                                  #'(lambda ()
                                      (execute "foo:b")))))
       (lake::register-task task tasks))
     ;; Register task B.
-    (let ((task (lake::make-task "b" '("foo") '("c" "d") nil #'noop)))
+    (let ((task (lake::make-task "b" '("foo") nil '("c" "d") nil #'noop)))
       (lake::register-task task tasks))
     ;; Register task C.
-    (let ((task (lake::make-task "c" '("foo") nil nil
+    (let ((task (lake::make-task "c" '("foo") nil nil nil
                                  #'(lambda ()
                                      (sleep 1)
                                      (push :c result)))))
       (lake::register-task task tasks))
     ;; Register task D.
-    (let ((task (lake::make-task "d" '("foo") nil nil
+    (let ((task (lake::make-task "d" '("foo") nil nil nil
                                  #'(lambda ()
                                      (push :d result)))))
       (lake::register-task task tasks))

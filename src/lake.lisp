@@ -631,7 +631,7 @@
 
 (defun execute (name)
   (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
-    (run-task name1 *context-tasks* *context-jobs*)))
+    (%run-task name1 *context-tasks* *context-plist* *context-jobs*)))
 
 
 ;;
