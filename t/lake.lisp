@@ -356,7 +356,7 @@
 
 (subtest "file-task"
 
-  (let ((task (lake::make-file-task "hello.o" '("hello") '("hello.c") "desc"
+  (let ((task (lake::make-file-task "hello.o" '("hello") nil '("hello.c") "desc"
                                     #'(lambda ()
                                         (sh "gcc -c hello.c")))))
     (is (lake::task-name task)
@@ -366,42 +366,46 @@
     (is (lake::task-description task)
         "desc"))
 
-  (is-error (lake::make-file-task :foo nil nil nil #'noop)
+  (is-error (lake::make-file-task :foo nil nil nil nil #'noop)
             type-error
             "invalid task name.")
 
-  (is-error (lake::make-file-task "hello:hello.o" nil nil nil #'noop)
+  (is-error (lake::make-file-task "hello:hello.o" nil nil nil nil #'noop)
             simple-error
             "invalid task name.")
 
-  (is-error (lake::make-file-task "hello.o" :foo nil nil #'noop)
+  (is-error (lake::make-file-task "hello.o" :foo nil nil nil #'noop)
             type-error
             "invalid namespace.")
 
-  (is-error (lake::make-file-task "hello.o" '("foo:bar") nil nil #'noop)
+  (is-error (lake::make-file-task "hello.o" '("foo:bar") nil nil nil #'noop)
             simple-error
             "invalid namespace.")
 
-  (is-error (lake::make-file-task "hello.o" '(":foo") nil nil #'noop)
+  (is-error (lake::make-file-task "hello.o" '(":foo") nil nil nil #'noop)
             simple-error
             "invalid namespace.")
 
-  (is-error (lake::make-file-task "hello.o" nil :foo nil #'noop)
+  (is-error (lake::make-file-task "hello.o" nil :foo nil nil #'noop)
+            type-error
+            "invalid arguments.")
+
+  (is-error (lake::make-file-task "hello.o" nil nil :foo nil #'noop)
             type-error
             "invalid dependency.")
 
-  (is-error (lake::make-file-task "hello.o" nil nil :foo #'noop)
+  (is-error (lake::make-file-task "hello.o" nil nil nil :foo #'noop)
             type-error
             "invalid task description.")
 
-  (is-error (lake::make-file-task "hello.o" nil nil nil :foo)
+  (is-error (lake::make-file-task "hello.o" nil nil nil nil :foo)
             type-error
             "invalid task action."))
 
 (subtest "file-task-out-of-date"
 
   (with-test-directory
-    (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+    (let ((task (lake::make-file-task "foo" nil nil '("bar") nil #'noop)))
       (sh "touch foo; sleep 1; touch bar")
       (is (lake::file-task-out-of-date task)
           t)
@@ -409,13 +413,13 @@
       (is (lake::file-task-out-of-date task)
           nil)))
 
-  (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+  (let ((task (lake::make-file-task "foo" nil nil '("bar") nil #'noop)))
     (is-error (lake::file-task-out-of-date task)
               error
               "no target file exists."))
 
   (with-test-directory
-    (let ((task (lake::make-file-task "foo" nil '("bar") nil #'noop)))
+    (let ((task (lake::make-file-task "foo" nil nil '("bar") nil #'noop)))
       (sh "touch foo")
       (is-error (lake::file-task-out-of-date task)
                 error
@@ -428,7 +432,7 @@
 (subtest "execute-task - file-task"
 
   (with-test-directory
-    (let ((task1 (lake::make-file-task "foo" nil '("bar") nil
+    (let ((task1 (lake::make-file-task "foo" nil nil '("bar") nil
                                        #'(lambda ()
                                            (sh "touch foo")
                                            (echo "foo")))))
@@ -438,7 +442,15 @@
                 "base case 1.")
       (is-print (lake::execute-task task1)
                 ""
-                "base case 2."))))
+                "base case 2.")))
+
+  (with-test-directory
+    (let ((task (lake::make-file-task "foo" nil '(foo) nil nil
+                                      #'(lambda (foo)
+                                          (echo foo)))))
+      (is-print (lake::execute-task task '("123"))
+                (format nil "123~%")
+                "base case 3."))))
 
 
 ;;

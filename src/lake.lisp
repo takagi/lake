@@ -193,13 +193,16 @@
 
 (defclass file-task (task) ())
 
-(defun make-file-task (name namespace dependency desc action)
+(defun make-file-task (name namespace args dependency desc action)
+  (dolist (arg args)
+    (check-type arg argument))
   (check-type desc (or string null))
   (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (resolve-dependency-task-names dependency namespace)))
     (make-instance 'file-task :name name1
                               :namespace namespace
+                              :arguments args
                               :dependency dependency1
                               :description desc
                               :action action)))
@@ -227,7 +230,7 @@
   (if (file-task-to-be-executed-p file-task)
       (progn
         ;; Execute file task.
-        (funcall (task-action file-task))
+        (apply (task-action file-task) args)
         ;; Show message if verbose.
         (verbose "done." t))
       ;; Skip file task to show message if verbose.
