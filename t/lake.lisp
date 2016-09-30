@@ -596,6 +596,7 @@
             type-error
             "Invalid string."))
 
+#+ci
 (subtest "ssh"
 
   (let ((*ssh-host* "localhost")
@@ -616,6 +617,7 @@
 ;;
 ;; SCP
 
+#+ci
 (subtest "scp"
 
   (let ((*ssh-host* "localhost")
@@ -887,6 +889,7 @@
               (format nil "foo~%bar~%")
               "basic case 3.")
 
+    #+ci
     (let ((*ssh-host* "localhost")
           (*ssh-user* "`whoami`")
           (*ssh-identity* nil))
