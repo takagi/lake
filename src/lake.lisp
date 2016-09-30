@@ -19,6 +19,7 @@
            :*path*)
   (:shadow :directory)
   (:import-from :alexandria
+                :ensure-list
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
@@ -285,6 +286,14 @@
   `(let ((*namespace* (cons ,namespace *namespace*)))
      ,@body))
 
+(defun name-and-args-p (x)
+  (and (listp x)
+       (stringp (car x))
+       (every #'argument-p (cdr x))))
+
+(deftype name-and-args ()
+  '(satisfies name-and-args-p))
+
 (defun parse-body (forms)
   (flet ((desc-p (form rest)
            (and (stringp form)
@@ -296,13 +305,16 @@
                 (values forms nil)))
         (values nil nil))))
 
-(defmacro task (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-task ,name *namespace* ',dependency ,desc
-                               #'(lambda ()
-                                   ,@forms))
-                    *tasks*)))
+(defmacro task (name-and-args dependency &body body)
+  (check-type name-and-args (or string name-and-args))
+  (destructuring-bind (name . args) (ensure-list name-and-args)
+    (let ((args1 (mapcar #'car
+                  (mapcar #'ensure-pair args))))
+      (multiple-value-bind (forms desc) (parse-body body)
+        `(register-task (make-task ,name *namespace* ',args ',dependency ,desc
+                                   #'(lambda ,args1
+                                       ,@forms))
+                        *tasks*)))))
 
 (defmacro file (name dependency &body body)
   (check-type name string)

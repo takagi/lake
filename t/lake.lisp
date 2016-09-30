@@ -571,6 +571,26 @@
               type-error
               "invalid namespace.")))
 
+(subtest "name-and-pargs-p"
+
+  (is (lake::name-and-args-p '("foo" bar))
+      t)
+
+  (is (lake::name-and-args-p '("foo" bar baz))
+      t)
+
+  (is (lake::name-and-args-p '("foo" (bar 123) (baz 456)))
+      t)
+
+  (is (lake::name-and-args-p "foo")
+      nil)
+
+  (is (lake::name-and-args-p '("foo" "bar"))
+      nil)
+
+  (is (lake::name-and-args-p '("foo" ("bar" 123)))
+      nil))
+
 (subtest "parse-body"
 
   (is-values (lake::parse-body '((echo "foo") (echo "bar")))
@@ -586,9 +606,12 @@
              "base case 3."))
 
 (subtest "task macro"
+  ;; no arguments / an argument / two or more arguments
+  ;; no default value / default values
 
   (let ((lake::*tasks* nil))
 
+    ;; No arguments.
     (task "foo" ()
       "desc"
       (echo "foo"))
@@ -597,10 +620,52 @@
               (format nil "foo~%")
               "base case 1.")
 
+    ;; An argument.
+    (task ("foo" bar) ()
+      (echo bar))
+
+    (is-print (lake::run-task "foo[123]" lake::*tasks*)
+              (format nil "123~%")
+              "base case 2.")
+
+    ;; Two or more arguments.
+    (task ("foo" bar baz) ()
+      (echo bar)
+      (echo baz))
+
+    (is-print (lake::run-task "foo[123,456]" lake::*tasks*)
+              (format nil "123~%456~%")
+              "base case 3.")
+
+    ;; An argument with default value.
+    (task ("foo" (bar "123")) ()
+      (echo bar))
+
+    (is-print (lake::run-task "foo" lake::*tasks*)
+              (format nil "123~%")
+              "base case 4.")
+
+    ;; Invalid cases.
+
     (is-error (macroexpand '(task (format nil "foo") ()
                              (echo "foo")))
               type-error
-              "invalid task name.")))
+              "invalid task name.")
+
+    (is-error (macroexpand '(task ("foo" (bar)) ()
+                             (echo bar)))
+              type-error
+              "invalid task arguments.")
+
+    (is-error (macroexpand '(task ("foo" (bar 1 2)) ()
+                             (echo bar)))
+              type-error
+              "invalid task arguments.")
+
+    (is-error (macroexpand '(task ("foo" (1 2)) ()
+                             (echo bar)))
+              type-error
+              "invalid task arguments.")))
 
 (subtest "file macro"
 
