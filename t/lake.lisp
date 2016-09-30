@@ -671,14 +671,15 @@
 
   (let ((lake::*tasks* nil))
 
-    (file "hello.o" ("hello.c")
+    (file ("hello.o" foo) ("hello.c")
       "desc"
+      (echo foo)
       (echo "gcc -c hello.c"))
 
     (with-test-directory
       (sh "touch hello.c")
-      (is-print (lake::run-task "hello.o" lake::*tasks*)
-                (format nil "gcc -c hello.c~%")
+      (is-print (lake::run-task "hello.o[123]" lake::*tasks*)
+                (format nil "123~%gcc -c hello.c~%")
                 "base case 1."))
 
     (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")

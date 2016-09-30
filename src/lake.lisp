@@ -316,13 +316,17 @@
                                        ,@forms))
                         *tasks*)))))
 
-(defmacro file (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-file-task ,name *namespace* ',dependency ,desc
-                                    #'(lambda ()
-                                        ,@forms))
-                    *tasks*)))
+(defmacro file (name-and-args dependency &body body)
+  (check-type name-and-args (or string name-and-args))
+  (destructuring-bind (name . args) (ensure-list name-and-args)
+    (let ((args1 (mapcar #'car
+                  (mapcar #'ensure-pair args))))
+      (multiple-value-bind (forms desc) (parse-body body)
+        `(register-task
+          (make-file-task ,name *namespace* ',args ',dependency ,desc
+                          #'(lambda ,args1
+                              ,@forms))
+          *tasks*)))))
 
 (defmacro directory (name &optional desc)
   (check-type name string)
