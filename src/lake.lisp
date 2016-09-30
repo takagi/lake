@@ -588,6 +588,27 @@
   #-thread-support
   (run-task-serial target tasks))
 
+(defun parse-args (string result)
+  (cl-ppcre:register-groups-bind (arg remaining-args)
+      ("((?:[^\\\\,]|\\\\.)*?)\\s*(?:,\\s*(.*))?$" string :sharedp t)
+    (let* ((arg1 (cl-ppcre:regex-replace-all "\\\\(.)" arg "\\1"))
+           (result1 (cons arg1 result)))
+      (if remaining-args
+          (parse-args remaining-args result1)
+          result1))))
+
+(defun parse-target (string)
+  (multiple-value-bind (name args)
+      (cl-ppcre:register-groups-bind (name remaining-args)
+          ("^([^\\[]+)\\[(.*)\\]$" string :sharedp t)
+        (if (and remaining-args
+                 (string/= remaining-args ""))
+            (values name (nreverse (parse-args remaining-args nil)))
+            (values name nil)))
+    (if name
+        (values name args)
+        (values string nil))))
+
 (defun execute (name)
   (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
     (run-task name1 *context-tasks* *context-jobs*)))

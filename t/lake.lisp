@@ -962,6 +962,46 @@
             type-error
             "invalid tasks."))
 
+(subtest "parse-target"
+  ;; no arguments / an argument / two or more argument
+
+  (is-values (lake::parse-target "foo")
+             '("foo" nil))
+
+  (is-values (lake::parse-target "foo[]")
+             '("foo" nil))
+
+  (is-values (lake::parse-target "foo[123]")
+             '("foo" ("123")))
+
+  (is-values (lake::parse-target "foo[123,456]")
+             '("foo" ("123" "456")))
+
+  (is-values (lake::parse-target "foo[ 123, 456 ]")
+             '("foo" (" 123" "456")))
+
+  (is-values (lake::parse-target "foo[123,4 56]")
+             '("foo" ("123" "4 56")))
+
+  (is-values (lake::parse-target "foo[123]]")
+             '("foo" ("123]")))
+
+  (is-values (lake::parse-target "foo[123]1")
+             '("foo[123]1" nil))
+
+  (is-values (lake::parse-target "foo[\"123,456\"]")
+             '("foo" ("\"123" "456\"")))
+
+  (is-values (lake::parse-target "foo[123\\,4\\,56]")
+             '("foo" ("123,4,56")))
+
+  (is-values (lake::parse-target "foo[123")
+             '("foo[123" nil))
+
+  (is-error (lake::parse-target :foo)
+            type-error
+            "invalid type."))
+
 (subtest "run-task"
 
   (let ((tasks nil)
