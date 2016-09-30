@@ -714,7 +714,7 @@
 
   (let ((tasks nil))
 
-    (lake::register-task (lake::make-task "foo" nil nil nil #'noop) tasks)
+    (lake::register-task (lake::make-task "foo" nil nil nil nil #'noop) tasks)
 
     (is (lake::task-exists-p "foo" tasks)
         t)
