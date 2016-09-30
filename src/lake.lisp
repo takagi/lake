@@ -132,17 +132,34 @@
 (defclass task ()
   ((name :initarg :name :reader task-name)
    (namespace :initarg :namespace :reader task-namespace)
+   (arguments :initarg :arguments :reader task-arguments)
    (dependency :initarg :dependency :reader task-dependency)
    (description :initarg :description :reader task-description)
    (action :initarg :action :reader task-action)))
 
-(defun make-task (name namespace dependency desc action)
+(defun arg-pair-p (x)
+  (and (listp x)
+       (symbolp (car x))
+       (cdr x)
+       (null (cddr x))))
+
+(defun argument-p (x)
+  (or (symbolp x)
+      (arg-pair-p x)))
+
+(deftype argument ()
+  '(satisfies argument-p))
+
+(defun make-task (name namespace args dependency desc action)
+  (dolist (arg args)
+    (check-type arg argument))
   (check-type desc (or string null))
   (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (resolve-dependency-task-names dependency namespace)))
     (make-instance 'task :name name1
                          :namespace namespace
+                         :arguments args
                          :dependency dependency1
                          :description desc
                          :action action)))
@@ -159,13 +176,13 @@
 (defun dependency-file-name (task-name)
   (fqtn-endname task-name))
 
-(defgeneric execute-task (task))
+(defgeneric execute-task (task &optional args))
 
-(defmethod execute-task ((task task))
+(defmethod execute-task ((task task) &optional args)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (funcall (task-action task))
+  (apply (task-action task) args)
   ;; Show message if verbose.
   (verbose "done." t)
   (values))
@@ -203,7 +220,7 @@
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((file-task file-task))
+(defmethod execute-task ((file-task file-task) &optional args)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name file-task)))
   ;; Execute file task if required.

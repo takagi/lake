@@ -260,9 +260,29 @@
 ;;
 ;; Task
 
+(subtest "arg-pair-p"
+
+  (is (lake::arg-pair-p '(foo 1))
+      t)
+
+  (is (lake::arg-pair-p :foo)
+      nil)
+
+  (is (lake::arg-pair-p nil)
+      nil)
+
+  (is (lake::arg-pair-p '(foo))
+      nil)
+
+  (is (lake::arg-pair-p '(1 1))
+      nil)
+
+  (is (lake::arg-pair-p '(foo 1 2))
+      nil))
+
 (subtest "task"
 
-  (let ((task (lake::make-task "bar" '("foo") '("baz" ":baz") "desc"
+  (let ((task (lake::make-task "bar" '("foo") nil '("baz" ":baz") "desc"
                                #'(lambda () (echo "foo")))))
     (is (lake::task-name task)
         "foo:bar")
@@ -277,45 +297,55 @@
               "#<TASK foo:bar>"
               "base case 2."))
 
-  (is-error (lake::make-task :foo nil nil nil #'noop)
+  (is-error (lake::make-task :foo nil nil nil nil #'noop)
             type-error
             "invalid task name.")
 
-  (is-error (lake::make-task "foo:bar" nil nil nil #'noop)
+  (is-error (lake::make-task "foo:bar" nil nil nil nil #'noop)
             simple-error
             "invalid task name.")
 
-  (is-error (lake::make-task "foo" :foo nil nil #'noop)
+  (is-error (lake::make-task "foo" :foo nil nil nil #'noop)
             type-error
             "invalid namespace.")
 
-  (is-error (lake::make-task "foo" '("foo:bar") nil nil #'noop)
+  (is-error (lake::make-task "foo" '("foo:bar") nil nil nil #'noop)
             simple-error
             "invalid namespace.")
 
-  (is-error (lake::make-task "foo" '(":foo") nil nil #'noop)
+  (is-error (lake::make-task "foo" '(":foo") nil nil nil #'noop)
             simple-error
             "invalid namespace.")
 
-  (is-error (lake::make-task "foo" nil :foo nil #'noop)
+  (is-error (lake::make-task "foo" nil :foo nil nil #'noop)
+            type-error
+            "invalid arguments.")
+
+  (is-error (lake::make-task "foo" nil nil :foo nil #'noop)
             type-error
             "invalid dependency.")
 
-  (is-error (lake::make-task "foo" nil nil :foo #'noop)
+  (is-error (lake::make-task "foo" nil nil nil :foo #'noop)
             type-error
             "invalid description.")
 
-  (is-error (lake::make-task "foo" nil nil nil :foo)
+  (is-error (lake::make-task "foo" nil nil nil nil :foo)
             type-error
             "invalid task action."))
 
 (subtest "execute-task - task"
 
-  (let ((task (lake::make-task "foo" nil nil nil
+  (let ((task (lake::make-task "foo" nil nil nil nil
                                #'(lambda () (echo "foo")))))
     (is-print (lake::execute-task task)
               (format nil "foo~%")
               "base case 1."))
+
+  (let ((task (lake::make-task "foo" nil '(foo) nil nil
+                               #'(lambda (foo) (echo foo)))))
+    (is-print (lake::execute-task task '("123"))
+              (format nil "123~%")
+              "base case 2."))
 
   (is-error (lake::execute-task :foo)
             simple-error
