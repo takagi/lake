@@ -42,6 +42,12 @@
 ;;
 ;; Utilities
 
+(defun ensure-pair (x)
+  (if (listp x)
+      (or (and (cdr x) (null (cddr x)) x)
+          (error "The value ~S is invalid pair." x))
+      (list x nil)))
+
 (defun valid-name-part-p (string)
   (check-type string string)
   (and (string/= string "")
@@ -463,6 +469,18 @@
   (check-type name string)
   (or (uiop:getenv (string-upcase name))
       (uiop:getenv (string-downcase name))))
+
+(defun get-task-arguments (task plist)
+  (check-type task task)
+  (check-type plist list)
+  (let ((task-args (mapcar #'ensure-pair
+                    (task-arguments task))))
+    (loop for (symbol default) in task-args
+       collect
+         (or (getf plist symbol)
+             (get-environment-variable (symbol-name symbol))
+             default
+             nil))))
 
 #+thread-support
 (defun %make-kernel (worker-count)

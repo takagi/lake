@@ -54,6 +54,26 @@
 ;;
 ;; Utilities
 
+(subtest "ensure-pair"
+
+  (is (lake::ensure-pair 'foo)
+      '(foo nil))
+
+  (is (lake::ensure-pair '(1 2))
+      '(1 2))
+
+  (is-error (lake::ensure-pair nil)
+            simple-error
+            "invalid value.")
+
+  (is-error (lake::ensure-pair '(foo))
+            simple-error
+            "invalid value.")
+
+  (is-error (lake::ensure-pair '(foo 1 2))
+            simple-error
+            "invalid value."))
+
 (subtest "valid-name-part-p"
 
   (is (lake::valid-name-part-p "foo")
@@ -803,6 +823,52 @@
   (is-error (lake::get-environment-variable :foo)
             type-error
             "invalid name."))
+
+(subtest "get-task-arguments"
+  ;; Test GET-TASK-ARGUMENTS based on the following matrix:
+  ;; - no arguments / an argument / two or more arguments
+  ;; - get value from plist / environment variables / default
+
+  ;; No arguments.
+  (let ((task (lake::make-task "foo" nil nil nil nil #'noop)))
+    (is (lake::get-task-arguments task nil)
+        nil))
+
+  ;; An task argument, get its value from plist.
+  (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
+    (is (lake::get-task-arguments task '(foo 123))
+        '(123)))
+
+  ;; An task argument, get its value from environment variables.
+  #+ros.init
+  (with-environment-variables (("FOO" "123"))
+    (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
+      (is (lake::get-task-arguments task nil)
+          '(123))))
+
+  ;; An task argument, get its value from its default.
+  (let ((task (lake::make-task "foo" nil '((foo 123)) nil nil #'noop)))
+    (is (lake::get-task-arguments task nil)
+        '(123)))
+
+  ;; An task argument, no value for it supplied.
+  (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
+    (is (lake::get-task-arguments task nil)
+        '(nil)))
+
+  ;; Two or more arguments.
+  (let ((task (lake::make-task "foo" nil '(foo bar) nil nil #'noop)))
+    (is (lake::get-task-arguments task '(foo 1 bar 2))
+        '(1 2)))
+
+  (is-error (lake::get-task-arguments :foo nil)
+            type-error
+            "invalid task.")
+
+  (let ((task (lake::make-task "foo" nil nil nil nil #'noop)))
+    (is-error (lake::get-task-arguments task :foo)
+              type-error
+              "invalid arguments.")))
 
 (subtest "traverse-tasks"
 
