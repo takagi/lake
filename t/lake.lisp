@@ -801,8 +801,8 @@
 (subtest "compute-dependency"
 
   (let ((tasks nil)
-        (task1 (lake::make-task "foo" nil '("bar") nil #'noop))
-        (task2 (lake::make-task "bar" nil nil nil #'noop)))
+        (task1 (lake::make-task "foo" nil nil '("bar") nil #'noop))
+        (task2 (lake::make-task "bar" nil nil nil nil #'noop)))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
     (is (lake::compute-dependency "foo" tasks)
@@ -811,7 +811,7 @@
 
   (with-test-directory
     (let ((tasks nil)
-          (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
+          (task1 (lake::make-task "foo" nil nil '("bar") nil #'noop)))
       (lake::register-task task1 tasks)
       (sh "touch bar")
       (is (lake::compute-dependency "foo" tasks)
@@ -819,24 +819,24 @@
           "base case 2.")))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "foo" nil '("bar") nil #'noop)))
+        (task1 (lake::make-task "foo" nil nil '("bar") nil #'noop)))
     (lake::register-task task1 tasks)
     (is-error (lake::compute-dependency "foo" tasks)
               simple-error
               "unknown task."))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "foo" nil '("foo") nil #'noop)))
+        (task1 (lake::make-task "foo" nil nil '("foo") nil #'noop)))
     (lake::register-task task1 tasks)
     (is-error (lake::compute-dependency "foo" tasks)
               simple-error
               "circular dependency."))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "multi" nil '("a" "b" "c") nil #'noop))
-        (task2 (lake::make-task "a" nil '("b") nil #'noop))
-        (task3 (lake::make-task "b" nil '("c") nil #'noop))
-        (task4 (lake::make-task "c" nil nil nil #'noop)))
+        (task1 (lake::make-task "multi" nil nil '("a" "b" "c") nil #'noop))
+        (task2 (lake::make-task "a" nil nil '("b") nil #'noop))
+        (task3 (lake::make-task "b" nil nil '("c") nil #'noop))
+        (task4 (lake::make-task "c" nil nil nil nil #'noop)))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
     (lake::register-task task3 tasks)
