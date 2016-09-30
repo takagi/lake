@@ -733,16 +733,16 @@
 (subtest "get-task"
 
   (let ((tasks nil)
-        (task (lake::make-task "foo" nil nil nil #'noop)))
+        (task (lake::make-task "foo" nil nil nil nil #'noop)))
     (lake::register-task task tasks)
     (is (lake::get-task "foo" tasks)
         task
         "base case 1."))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "foo" nil nil nil #'noop))
-        (task2 (lake::make-task "foo" nil nil nil #'(lambda ()
-                                                      (echo "foo")))))
+        (task1 (lake::make-task "foo" nil nil nil nil #'noop))
+        (task2 (lake::make-task "foo" nil nil nil nil #'(lambda ()
+                                                          (echo "foo")))))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
     (is-print (lake::run-task "foo" tasks)
