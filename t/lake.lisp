@@ -694,7 +694,7 @@
     (directory "dir" "desc")
 
     (with-test-directory
-      (lake::run-task "dir" lake::*tasks*)
+      (lake::run-task "dir[123]" lake::*tasks*)
       (is (and (directory-exists-p "dir") t)
           t))
 
