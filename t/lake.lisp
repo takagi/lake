@@ -764,17 +764,17 @@
 (subtest "traverse-tasks"
 
   (let ((tasks nil)
-        (task1 (lake::make-task "a" nil '("b" "c") nil #'noop)))
+        (task1 (lake::make-task "a" nil nil '("b" "c") nil #'noop)))
     (lake::register-task task1 tasks)
     (is (lake::traverse-tasks "a" tasks)
         '("b" "c" "a")))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "a" nil '("b" "c") nil #'noop))
-        (task2 (lake::make-task "b" nil '("d" "e") nil #'noop))
-        (task3 (lake::make-task "c" nil nil nil #'noop))
-        (task4 (lake::make-task "d" nil nil nil #'noop))
-        (task5 (lake::make-task "e" nil nil nil #'noop)))
+        (task1 (lake::make-task "a" nil nil '("b" "c") nil #'noop))
+        (task2 (lake::make-task "b" nil nil '("d" "e") nil #'noop))
+        (task3 (lake::make-task "c" nil nil nil nil #'noop))
+        (task4 (lake::make-task "d" nil nil nil nil #'noop))
+        (task5 (lake::make-task "e" nil nil nil nil #'noop)))
     (lake::register-task task1 tasks)
     (lake::register-task task2 tasks)
     (lake::register-task task3 tasks)
@@ -784,7 +784,7 @@
         '("d" "e" "b" "c" "a")))
 
   (let ((tasks nil)
-        (task1 (lake::make-task "a" nil '("a") nil #'noop)))
+        (task1 (lake::make-task "a" nil nil '("a") nil #'noop)))
     (lake::register-task task1 tasks)
     (is-error (lake::traverse-tasks "a" tasks)
               simple-error
