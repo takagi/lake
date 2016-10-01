@@ -488,6 +488,10 @@
   (or (uiop:getenv (string-upcase name))
       (uiop:getenv (string-downcase name))))
 
+(defun maybe (fn x)
+  (and x
+       (funcall fn x)))
+
 (defun read-argument-from-string (string)
   (let* ((eof (gensym))
          (value (handler-case (read-from-string string)
@@ -507,7 +511,8 @@
     (loop for (symbol default) in task-args
        collect
          (or (getf plist symbol)
-             (get-environment-variable (symbol-name symbol))
+             (maybe #'read-argument-from-string
+              (get-environment-variable (symbol-name symbol)))
              default
              nil))))
 
@@ -624,7 +629,8 @@
 (defun parse-args (string result)
   (cl-ppcre:register-groups-bind (arg remaining-args)
       ("((?:[^\\\\,]|\\\\.)*?)\\s*(?:,\\s*(.*))?$" string :sharedp t)
-    (let* ((arg1 (cl-ppcre:regex-replace-all "\\\\(.)" arg "\\1"))
+    (let* ((arg1 (read-argument-from-string
+                  (cl-ppcre:regex-replace-all "\\\\(.)" arg "\\1")))
            (result1 (cons arg1 result)))
       (if remaining-args
           (parse-args remaining-args result1)

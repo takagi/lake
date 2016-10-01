@@ -624,8 +624,8 @@
     (task ("foo" bar) ()
       (echo bar))
 
-    (is-print (lake::run-task "foo[123]" lake::*tasks*)
-              (format nil "123~%")
+    (is-print (lake::run-task "foo[bar]" lake::*tasks*)
+              (format nil "bar~%")
               "base case 2.")
 
     ;; Two or more arguments.
@@ -633,16 +633,16 @@
       (echo bar)
       (echo baz))
 
-    (is-print (lake::run-task "foo[123,456]" lake::*tasks*)
-              (format nil "123~%456~%")
+    (is-print (lake::run-task "foo[bar,baz]" lake::*tasks*)
+              (format nil "bar~%baz~%")
               "base case 3.")
 
     ;; An argument with default value.
-    (task ("foo" (bar "123")) ()
+    (task ("foo" (bar "baz")) ()
       (echo bar))
 
     (is-print (lake::run-task "foo" lake::*tasks*)
-              (format nil "123~%")
+              (format nil "baz~%")
               "base case 4.")
 
     ;; Invalid cases.
@@ -678,8 +678,8 @@
 
     (with-test-directory
       (sh "touch hello.c")
-      (is-print (lake::run-task "hello.o[123]" lake::*tasks*)
-                (format nil "123~%gcc -c hello.c~%")
+      (is-print (lake::run-task "hello.o[foo]" lake::*tasks*)
+                (format nil "foo~%gcc -c hello.c~%")
                 "base case 1."))
 
     (is-error (macroexpand '(file (format nil "hello.o") ("hello.c")
@@ -1083,31 +1083,31 @@
              '("foo" nil))
 
   (is-values (lake::parse-target "foo[123]")
-             '("foo" ("123")))
+             '("foo" (123)))
 
   (is-values (lake::parse-target "foo[123,456]")
-             '("foo" ("123" "456")))
+             '("foo" (123 456)))
 
-  (is-values (lake::parse-target "foo[ 123, 456 ]")
-             '("foo" (" 123" "456")))
+  (is-values (lake::parse-target "foo[ foo, bar ]")
+             '("foo" (" foo" "bar")))
 
-  (is-values (lake::parse-target "foo[123,4 56]")
-             '("foo" ("123" "4 56")))
+  (is-values (lake::parse-target "foo[foo,b ar]")
+             '("foo" ("foo" "b ar")))
 
-  (is-values (lake::parse-target "foo[123]]")
-             '("foo" ("123]")))
+  (is-values (lake::parse-target "foo[bar]]")
+             '("foo" ("bar]")))
 
   (is-values (lake::parse-target "foo[123]1")
              '("foo[123]1" nil))
 
-  (is-values (lake::parse-target "foo[\"123,456\"]")
-             '("foo" ("\"123" "456\"")))
+  (is-values (lake::parse-target "foo[\"foo,bar\"]")
+             '("foo" ("\"foo" "bar\"")))
 
-  (is-values (lake::parse-target "foo[123\\,4\\,56]")
-             '("foo" ("123,4,56")))
+  (is-values (lake::parse-target "foo[foo\\,b\\,ar]")
+             '("foo" ("foo,b,ar")))
 
-  (is-values (lake::parse-target "foo[123")
-             '("foo[123" nil))
+  (is-values (lake::parse-target "foo[bar")
+             '("foo[bar" nil))
 
   (is-error (lake::parse-target :foo)
             type-error
