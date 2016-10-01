@@ -488,6 +488,17 @@
   (or (uiop:getenv (string-upcase name))
       (uiop:getenv (string-downcase name))))
 
+(defun read-argument-from-string (string)
+  (let* ((eof (gensym))
+         (value (handler-case (read-from-string string)
+                  (end-of-file () eof))))
+    (cond
+      ((eq t value) t)
+      ((null value) nil)
+      ((eq eof value) string)
+      ((symbolp value) string)
+      (t value))))
+
 (defun get-task-arguments (task plist)
   (check-type task task)
   (check-type plist list)

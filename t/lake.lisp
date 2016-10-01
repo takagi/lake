@@ -890,6 +890,51 @@
             type-error
             "invalid name."))
 
+(subtest "read-argument-from-string"
+
+  (is (lake::read-argument-from-string "")
+      "")
+
+  (is (lake::read-argument-from-string "t")
+      t)
+
+  (is (lake::read-argument-from-string "nil")
+      nil)
+
+  (is (lake::read-argument-from-string "()")
+      nil)
+
+  (is (lake::read-argument-from-string "123")
+      123)
+
+  (is (lake::read-argument-from-string "123 ")
+      123)
+
+  (is (lake::read-argument-from-string "123 a")
+      123)
+
+  (is (lake::read-argument-from-string "123a")
+      "123a")
+
+  (is (lake::read-argument-from-string "12.3")
+      12.3)
+
+  (is (lake::read-argument-from-string "foo")
+      "foo")
+
+  (is (lake::read-argument-from-string "\"foo\"")
+      "foo")
+
+  (is (lake::read-argument-from-string "(foo 456)")
+      '(foo 456))
+
+  (is (lake::read-argument-from-string "(123")
+      "(123")
+
+  (is-error (lake::read-argument-from-string :foo)
+            type-error
+            "invalid type."))
+
 (subtest "get-task-arguments"
   ;; Test GET-TASK-ARGUMENTS based on the following matrix:
   ;; - no arguments / an argument / two or more arguments
