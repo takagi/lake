@@ -133,6 +133,50 @@ Lake provides the following forms to define tasks and namespaces in `Lakefile`:
     $ lake foo:bar:baz
     foo.bar.baz
 
+### Task arguments
+
+`task` and `file` task may take task arguments with which users can supply additional information used in task execution. Task arguments are defined as following:
+
+    (task ("hello" first-name last-name) ()
+      (echo #?"Hello ${first-name} ${last-name}!"))
+
+Here `hello` task takes two task arguments, `first-name` and `last-name`, and uses them in the task action to echo a line.
+
+To supply task arguments to a task, the task name followed by bracket enclosed string is passed to `lake` function:
+
+    > (lake "hello[john,doe]")
+    Hello john doe!
+
+or `lake` command in the command line:
+
+    $ lake hello[john,doe]
+    Hello john doe!
+
+If no task argument is supplied, environment variable whose name is the task argument name of uppercase or that of lowercase is looked for and its value was used if it was found. If no such an environment variable, the default value of the task argument is used. If no default value is defined, the task argument has `nil`.
+
+Note that task arguments following the task name does not include spaces because the shell splits the command at the existence of the spaces.
+
+    $ lake hello[john, doe]
+    No task "hello[john," found.
+
+If spaces are needed, the task name and following task arguments should be quoted.
+
+    $ lake "hello[billy bob, smith]"
+    Hello billy bob smith!
+
+Task arguments may have their default value as following:
+
+    (task ("hello" (first-name "john") (last-name "doe") ()
+      (echo #?"Hello ${first-name} ${last-name}!"))
+
+When default values for task arguments are defined and task arguments are not supplied, the default values are used.
+
+    $ lake hello
+    Hello john doe!
+
+A task argument supplied via the bracket enclosed string or the value of the environment variable is read with `read-from-string` function and its result values are used except a symbol. If a task argument are to be read to a symbol, its original string is used for the value of the task argument for convenience.
+
+
 ### Lakefile Modularity
 
 Lakefile modularity is quite easy without any special facilities, just `load` a Lakefile from another is enough. Tasks with same name are replaced with newer loaded as ones in a Lakefile. Namespaces with same name are merged into.
