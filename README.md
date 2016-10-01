@@ -15,7 +15,7 @@ In lake, you use `Lakefile` instead of `Makefile` or `Rakefile`.
     (use-syntax :interpol)
 
     ;; Tasks that build an executable with dependency.
-    (defparameter cc (or (ros:getenv "CC") "gcc"))
+    (defparameter cc (getenv "CC" "gcc"))
 
     (file "hello" ("hello.o" "message.o")
       (sh #?"${cc} -o hello hello.o message.o"))
@@ -58,10 +58,10 @@ or you can also install it using Roswell including `lake` command. Ensure that `
 ## Lakefile
 
 Lake provides the following forms to define tasks and namespaces in `Lakefile`:
-- **Task** fundamental concept processing a sequence of shell commands
-- **File Task** a task resolving file dependency with up-to-date check
-- **Directory Task** a task that ensures a directory exists.
-- **Namespace** grouping up multiple tasks to magage them.
+- **Task** is the fundamental concept processing a sequence of shell commands
+- **File Task** is a task resolving file dependency with up-to-date check
+- **Directory Task** is a task that ensures a directory exists.
+- **Namespace** is for grouping up multiple tasks to magage them.
 
 ### Task
 
@@ -239,8 +239,6 @@ As `ssh` function above, `*ssh-host*`, `*ssh-user*` and `*ssh-identity*` should 
 ### [Function] execute
 
     EXECUTE target
-
-**DEPRECATED**
 
 Executes a task specified with `target` as a string within another. The name of the target task is resolved as well as `task` macro's dependency list in both relative and absolute manner.
 
