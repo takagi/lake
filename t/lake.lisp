@@ -898,38 +898,29 @@
   (is (lake::read-argument-from-string "t")
       t)
 
+  (is (lake::read-argument-from-string "T")
+      t)
+
+  (is (lake::read-argument-from-string " t")
+      " t")
+
   (is (lake::read-argument-from-string "nil")
       nil)
+
+  (is (lake::read-argument-from-string "NIL")
+      nil)
+
+  (is (lake::read-argument-from-string " nil")
+      " nil")
 
   (is (lake::read-argument-from-string "()")
       nil)
 
-  (is (lake::read-argument-from-string "123")
-      123)
-
-  (is (lake::read-argument-from-string "123 ")
-      123)
-
-  (is (lake::read-argument-from-string "123 a")
-      123)
-
-  (is (lake::read-argument-from-string "123a")
-      "123a")
-
-  (is (lake::read-argument-from-string "12.3")
-      12.3)
+  (is (lake::read-argument-from-string " ()")
+      " ()")
 
   (is (lake::read-argument-from-string "foo")
       "foo")
-
-  (is (lake::read-argument-from-string "\"foo\"")
-      "foo")
-
-  (is (lake::read-argument-from-string "(foo 456)")
-      '(foo 456))
-
-  (is (lake::read-argument-from-string "(123")
-      "(123")
 
   (is-error (lake::read-argument-from-string :foo)
             type-error
@@ -947,20 +938,20 @@
 
   ;; An task argument, get its value from plist.
   (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
-    (is (lake::get-task-arguments task '(foo 123))
-        '(123)))
+    (is (lake::get-task-arguments task '(foo "123"))
+        '("123")))
 
   ;; An task argument, get its value from environment variables.
   #+ros.init
   (with-environment-variables (("FOO" "123"))
     (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
       (is (lake::get-task-arguments task nil)
-          '(123))))
+          '("123"))))
 
   ;; An task argument, get its value from its default.
-  (let ((task (lake::make-task "foo" nil '((foo 123)) nil nil #'noop)))
+  (let ((task (lake::make-task "foo" nil '((foo "123")) nil nil #'noop)))
     (is (lake::get-task-arguments task nil)
-        '(123)))
+        '("123")))
 
   ;; An task argument, no value for it supplied.
   (let ((task (lake::make-task "foo" nil '(foo) nil nil #'noop)))
@@ -1083,10 +1074,10 @@
              '("foo" nil))
 
   (is-values (lake::parse-target "foo[123]")
-             '("foo" (123)))
+             '("foo" ("123")))
 
   (is-values (lake::parse-target "foo[123,456]")
-             '("foo" (123 456)))
+             '("foo" ("123" "456")))
 
   (is-values (lake::parse-target "foo[ foo, bar ]")
              '("foo" (" foo" "bar")))

@@ -492,15 +492,12 @@
        (funcall fn x)))
 
 (defun read-argument-from-string (string)
-  (let* ((eof (gensym))
-         (value (handler-case (read-from-string string)
-                  (end-of-file () eof))))
-    (cond
-      ((eq t value) t)
-      ((null value) nil)
-      ((eq eof value) string)
-      ((symbolp value) string)
-      (t value))))
+  (check-type string string)
+  (cond
+    ((string= "T" (string-upcase string)) t)
+    ((string= "NIL" (string-upcase string)) nil)
+    ((string= "()" string) nil)
+    (t string)))
 
 (defun get-task-arguments (task plist)
   (check-type task task)
