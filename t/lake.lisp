@@ -874,16 +874,16 @@
         "123"))
 
   #+ros.init
-  (with-environment-variables (("foo_bar" "123"))
-    (is (lake::get-environment-variable "FOO_BAR")
+  (with-environment-variables (("FOO_BAR" "123"))
+    (is (lake::get-environment-variable "foo_bar")
         "123"))
 
   #+ros.init
-  (with-environment-variables (("Foo_Bar" "123"))
-    (is (lake::get-environment-variable "Foo_Bar")
+  (with-environment-variables (("foo_bar" "123"))
+    (is (lake::get-environment-variable "foo_bar")
         nil))
 
-  (is (lake::get-environment-variable "Foo_Bar")
+  (is (lake::get-environment-variable "FOO_BAR")
       nil)
 
   (is-error (lake::get-environment-variable :foo)

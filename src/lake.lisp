@@ -485,8 +485,7 @@
 
 (defun get-environment-variable (name)
   (check-type name string)
-  (or (uiop:getenv (string-upcase name))
-      (uiop:getenv (string-downcase name))))
+  (uiop:getenv (string-upcase name)))
 
 (defun maybe (fn x)
   (and x
