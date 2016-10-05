@@ -169,7 +169,7 @@ If spaces are needed, the task name and following task arguments should be quote
     $ lake "hello[billy bob, smith]"
     Hello billy bob smith!
 
-For convenience, if the string supplied to a task argument is "t", "nil" or their uppercase, it is read to `t` or `nil` and the task argument has the read value. Otherwise, the task argument has a string as it is without being read.
+For convenience, if the string supplied to a task argument via a bracket enclosed string or an environment variable is "t", "nil" or their uppercase, it is read to `t` or `nil` and the task argument has the read value. Otherwise, the task argument has the string as it is without being read.
 
 ### Lakefile Modularity
 
