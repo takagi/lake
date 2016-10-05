@@ -437,9 +437,8 @@
 ;; GETENV
 
 (defun getenv (name &optional default)
-  (handler-case
-      (uiop:getenv name)
-    (error () default)))
+  (or (uiop:getenv name)
+      default))
 
 
 ;;

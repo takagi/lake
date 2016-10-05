@@ -804,6 +804,23 @@
 ;;
 ;; GETENV
 
+(subtest "getenv"
+
+  #+ros.init
+  (with-environment-variables (("FOO" "123"))
+    (is (getenv "FOO")
+        "123"))
+
+  (is (getenv "FOO")
+      nil)
+
+  (is (getenv "FOO" "123")
+      "123")
+
+  (is-error (getenv :foo)
+            type-error
+            "invalid type."))
+
 
 ;;
 ;; *PATH*
