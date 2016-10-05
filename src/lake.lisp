@@ -496,7 +496,6 @@
   (cond
     ((string= "T" (string-upcase string)) t)
     ((string= "NIL" (string-upcase string)) nil)
-    ((string= "()" string) nil)
     (t string)))
 
 (defun get-task-arguments (task plist)

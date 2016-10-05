@@ -914,10 +914,7 @@
       " nil")
 
   (is (lake::read-argument-from-string "()")
-      nil)
-
-  (is (lake::read-argument-from-string " ()")
-      " ()")
+      "()")
 
   (is (lake::read-argument-from-string "foo")
       "foo")
