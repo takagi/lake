@@ -19,6 +19,7 @@
            :*path*)
   (:shadow :directory)
   (:import-from :alexandria
+                :ensure-list
                 :once-only)
   (:import-from :split-sequence
                 :split-sequence)
@@ -41,6 +42,12 @@
 
 ;;
 ;; Utilities
+
+(defun ensure-pair (x)
+  (if (listp x)
+      (or (and (cdr x) (null (cddr x)) x)
+          (error "The value ~S is invalid pair." x))
+      (list x nil)))
 
 (defun valid-name-part-p (string)
   (check-type string string)
@@ -132,17 +139,34 @@
 (defclass task ()
   ((name :initarg :name :reader task-name)
    (namespace :initarg :namespace :reader task-namespace)
+   (arguments :initarg :arguments :reader task-arguments)
    (dependency :initarg :dependency :reader task-dependency)
    (description :initarg :description :reader task-description)
    (action :initarg :action :reader task-action)))
 
-(defun make-task (name namespace dependency desc action)
+(defun arg-pair-p (x)
+  (and (listp x)
+       (symbolp (car x))
+       (cdr x)
+       (null (cddr x))))
+
+(defun argument-p (x)
+  (or (symbolp x)
+      (arg-pair-p x)))
+
+(deftype argument ()
+  '(satisfies argument-p))
+
+(defun make-task (name namespace args dependency desc action)
+  (dolist (arg args)
+    (check-type arg argument))
   (check-type desc (or string null))
   (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (resolve-dependency-task-names dependency namespace)))
     (make-instance 'task :name name1
                          :namespace namespace
+                         :arguments args
                          :dependency dependency1
                          :description desc
                          :action action)))
@@ -159,13 +183,13 @@
 (defun dependency-file-name (task-name)
   (fqtn-endname task-name))
 
-(defgeneric execute-task (task))
+(defgeneric execute-task (task &optional args))
 
-(defmethod execute-task ((task task))
+(defmethod execute-task ((task task) &optional args)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name task)))
   ;; Execute the task.
-  (funcall (task-action task))
+  (apply (task-action task) args)
   ;; Show message if verbose.
   (verbose "done." t)
   (values))
@@ -176,13 +200,16 @@
 
 (defclass file-task (task) ())
 
-(defun make-file-task (name namespace dependency desc action)
+(defun make-file-task (name namespace args dependency desc action)
+  (dolist (arg args)
+    (check-type arg argument))
   (check-type desc (or string null))
   (check-type action function)
   (let ((name1 (resolve-task-name name namespace))
         (dependency1 (resolve-dependency-task-names dependency namespace)))
     (make-instance 'file-task :name name1
                               :namespace namespace
+                              :arguments args
                               :dependency dependency1
                               :description desc
                               :action action)))
@@ -203,14 +230,14 @@
   (or (not (file-exists-p (file-task-file-name file-task)))
       (file-task-out-of-date file-task)))
 
-(defmethod execute-task ((file-task file-task))
+(defmethod execute-task ((file-task file-task) &optional args)
   ;; Show message if verbose.
   (verbose (format nil "~A: " (task-name file-task)))
   ;; Execute file task if required.
   (if (file-task-to-be-executed-p file-task)
       (progn
         ;; Execute file task.
-        (funcall (task-action file-task))
+        (apply (task-action file-task) args)
         ;; Show message if verbose.
         (verbose "done." t))
       ;; Skip file task to show message if verbose.
@@ -237,6 +264,7 @@
                       (ensure-directories-exist pathspec)))))
     (make-instance 'directory-task :name name1
                                    :namespace nil
+                                   :arguments nil
                                    :dependency nil
                                    :description desc
                                    :action action)))
@@ -258,6 +286,14 @@
   `(let ((*namespace* (cons ,namespace *namespace*)))
      ,@body))
 
+(defun name-and-args-p (x)
+  (and (listp x)
+       (stringp (car x))
+       (every #'argument-p (cdr x))))
+
+(deftype name-and-args ()
+  '(satisfies name-and-args-p))
+
 (defun parse-body (forms)
   (flet ((desc-p (form rest)
            (and (stringp form)
@@ -269,21 +305,28 @@
                 (values forms nil)))
         (values nil nil))))
 
-(defmacro task (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-task ,name *namespace* ',dependency ,desc
-                               #'(lambda ()
-                                   ,@forms))
-                    *tasks*)))
+(defmacro task (name-and-args dependency &body body)
+  (check-type name-and-args (or string name-and-args))
+  (destructuring-bind (name . args) (ensure-list name-and-args)
+    (let ((args1 (mapcar #'car
+                  (mapcar #'ensure-pair args))))
+      (multiple-value-bind (forms desc) (parse-body body)
+        `(register-task (make-task ,name *namespace* ',args ',dependency ,desc
+                                   #'(lambda ,args1
+                                       ,@forms))
+                        *tasks*)))))
 
-(defmacro file (name dependency &body body)
-  (check-type name string)
-  (multiple-value-bind (forms desc) (parse-body body)
-    `(register-task (make-file-task ,name *namespace* ',dependency ,desc
-                                    #'(lambda ()
-                                        ,@forms))
-                    *tasks*)))
+(defmacro file (name-and-args dependency &body body)
+  (check-type name-and-args (or string name-and-args))
+  (destructuring-bind (name . args) (ensure-list name-and-args)
+    (let ((args1 (mapcar #'car
+                  (mapcar #'ensure-pair args))))
+      (multiple-value-bind (forms desc) (parse-body body)
+        `(register-task
+          (make-file-task ,name *namespace* ',args ',dependency ,desc
+                          #'(lambda ,args1
+                              ,@forms))
+          *tasks*)))))
 
 (defmacro directory (name &optional desc)
   (check-type name string)
@@ -436,7 +479,37 @@
 
 (defvar *context-namespace*)
 
+(defvar *context-plist*)
+
 (defvar *context-jobs*)
+
+(defun get-environment-variable (name)
+  (check-type name string)
+  (uiop:getenv (string-upcase name)))
+
+(defun maybe (fn x)
+  (and x
+       (funcall fn x)))
+
+(defun read-argument-from-string (string)
+  (check-type string string)
+  (cond
+    ((string= "T" (string-upcase string)) t)
+    ((string= "NIL" (string-upcase string)) nil)
+    (t string)))
+
+(defun get-task-arguments (task plist)
+  (check-type task task)
+  (check-type plist list)
+  (let ((task-args (mapcar #'ensure-pair
+                    (task-arguments task))))
+    (loop for (symbol default) in task-args
+       collect
+         (or (getf plist symbol)
+             (maybe #'read-argument-from-string
+              (get-environment-variable (symbol-name symbol)))
+             default
+             nil))))
 
 #+thread-support
 (defun %make-kernel (worker-count)
@@ -448,7 +521,7 @@
                             ,*default-pathname-defaults*))))
 
 #+thread-support
-(defun run-task-concurrent (target tasks jobs)
+(defun run-task-concurrent (target tasks plist jobs)
   (let ((*kernel* (%make-kernel jobs))
         (ptree (make-ptree)))
     ;; Define ptree nodes.
@@ -480,13 +553,15 @@
                     #'(lambda (&rest _)
                         (declare (ignore _))
                         (let ((*context-tasks* tasks)
+                              (*context-plist* plist)
                               (*context-namespace* namespace)
                               (*context-jobs* jobs)
                               (*verbose* verbose)
                               (*ssh-host* ssh-host)
                               (*ssh-user* ssh-user)
-                              (*ssh-identity* ssh-identity))
-                          (execute-task task))))
+                              (*ssh-identity* ssh-identity)
+                              (args (get-task-arguments task plist)))
+                          (execute-task task args))))
                   ptree)))
     ;; Call ptree.
     (handler-case
@@ -527,26 +602,64 @@
    :test #'task=
    :from-end t))
 
-(defun run-task-serial (target tasks)
+(defun run-task-serial (target tasks plist)
   (let ((*context-tasks* tasks)
+        (*context-plist* plist)
         (*context-jobs* 1))
     (loop for task in (compute-dependency target tasks)
-       do (let ((*context-namespace* (task-namespace task)))
-            (execute-task task)))))
+       do (let ((*context-namespace* (task-namespace task))
+                (args (get-task-arguments task plist)))
+            (execute-task task args)))))
 
-(defun run-task (target tasks &optional (jobs 1))
+(defun %run-task (target tasks plist jobs)
   #-thread-support
   (declare (ignore jobs))
   #+thread-support
   (if (< 1 jobs)
-      (run-task-concurrent target tasks jobs)
-      (run-task-serial target tasks))
+      (run-task-concurrent target tasks plist jobs)
+      (run-task-serial target tasks plist))
   #-thread-support
-  (run-task-serial target tasks))
+  (run-task-serial target tasks plist))
+
+(defun parse-args (string result)
+  (cl-ppcre:register-groups-bind (arg remaining-args)
+      ("((?:[^\\\\,]|\\\\.)*?)\\s*(?:,\\s*(.*))?$" string :sharedp t)
+    (let* ((arg1 (read-argument-from-string
+                  (cl-ppcre:regex-replace-all "\\\\(.)" arg "\\1")))
+           (result1 (cons arg1 result)))
+      (if remaining-args
+          (parse-args remaining-args result1)
+          result1))))
+
+(defun parse-target (string)
+  (multiple-value-bind (name args)
+      (cl-ppcre:register-groups-bind (name remaining-args)
+          ("^([^\\[]+)\\[(.*)\\]$" string :sharedp t)
+        (if (and remaining-args
+                 (string/= remaining-args ""))
+            (values name (nreverse (parse-args remaining-args nil)))
+            (values name nil)))
+    (if name
+        (values name args)
+        (values string nil))))
+
+(defun construct-plist (name args tasks)
+  (let* ((task (get-task name tasks))
+         (task-args (mapcar #'car
+                     (mapcar #'ensure-pair
+                      (task-arguments task)))))
+    (loop for arg in args
+          for task-arg in task-args
+       append (list task-arg arg))))
+
+(defun run-task (target tasks &optional (jobs 1))
+  (multiple-value-bind (name args) (parse-target target)
+    (let ((plist (construct-plist name args tasks)))
+      (%run-task name tasks plist jobs))))
 
 (defun execute (name)
   (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
-    (run-task name1 *context-tasks* *context-jobs*)))
+    (%run-task name1 *context-tasks* *context-plist* *context-jobs*)))
 
 
 ;;
