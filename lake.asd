@@ -14,7 +14,6 @@
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
   :depends-on (:alexandria
-               #+thread-support
                :lparallel
                :split-sequence
                :cl-syntax-interpol)
