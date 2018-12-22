@@ -360,8 +360,8 @@
     (echo command))
   (multiple-value-bind (output error-output return-status)
       (run-program command :input :interactive
-                           :output t
-                           :error-output t
+                           :output :interactive
+                           :error-output :interactive
                            :ignore-error-status t)
     (declare (ignore output error-output))
     (unless (zerop return-status)
