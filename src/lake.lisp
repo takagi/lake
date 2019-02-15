@@ -16,7 +16,8 @@
            :ssh
            :scp
            :getenv
-           :*path*)
+           :*path*
+           :lake-command-error)
   (:shadow :directory)
   (:import-from :alexandria
                 :ensure-list
@@ -39,6 +40,19 @@
                 :invoke-transfer-error))
 (in-package :lake)
 
+;;
+;; Error
+
+(define-condition lake-command-error (error)
+  ((message :initarg :message
+            :reader lake-error-message))
+  (:report (lambda (condition stream)
+             (princ (lake-error-message condition)
+                    stream))))
+
+(defun lake-command-error (text &rest args)
+  (error 'lake-command-error
+         :message (apply #'format nil text args)))
 
 ;;
 ;; Utilities
@@ -365,7 +379,7 @@
                            :ignore-error-status t)
     (declare (ignore output error-output))
     (unless (zerop return-status)
-      (error "Command ~S exited with error code ~A." command return-status))))
+      (lake-command-error "Command ~S exited with error code ~A." command return-status))))
 
 (defmethod sh ((command list) &key echo)
   (let ((command1 (format nil "~{~A~^ ~}" command)))

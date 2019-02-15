@@ -38,12 +38,17 @@ exec ros -m lake -Q -- $0 "$@"
                 (ros:quit 1))
                ((string= "-v" arg) (setf v-mode t))
                (t (push arg targets))))
-    (let ((params `(:verbose ,v-mode
-                             ,@(when jobs
-                                 `(:jobs ,jobs))
-                             ,@(when pathname
-                                 `(:pathname ,pathname)))))
-      (if targets
-          (loop for target in (nreverse targets)
-                do (apply #'lake:lake :target target params))
-          (apply #'lake:lake params)))))
+    (handler-case
+        (let ((params `(:verbose ,v-mode
+                        ,@(when jobs
+                            `(:jobs ,jobs))
+                        ,@(when pathname
+                            `(:pathname ,pathname)))))
+          (if targets
+              (loop for target in (nreverse targets)
+                    do (apply #'lake:lake :target target params))
+              (apply #'lake:lake params))
+          (ros:quit 0))
+     (lake:lake-command-error (e)
+       (format *error-output* "~a~%" e)
+       (ros:quit -1)))))
