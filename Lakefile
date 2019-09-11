@@ -74,6 +74,6 @@
       (sh "rm -f bin/lake")
       (sh "qlot exec ros run -L sbcl -e '(ql:quickload :deploy)' -e '(progn (setf deploy:*status-output* nil) (asdf:make :lake))'"))
 
-(task update-formula ()
+(task "update-formula" ()
       "Updates Homebrew's formula in lake.rb"
       (sh "qlot exec cl-brewer lake"))
