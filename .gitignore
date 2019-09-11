@@ -11,3 +11,4 @@
 docs/
 /bin/
 /quicklisp/
+/.qlot/

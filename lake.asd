@@ -9,10 +9,11 @@
 (in-package :lake-asd)
 
 (defsystem lake
-  :version "0.1"
+  :version "0.1.1"
   :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
+  :homepage "https://github.com/svetlyak40wt/lake"
   :class :package-inferred-system
   :pathname "src"
   :depends-on ("cl-syntax-interpol"

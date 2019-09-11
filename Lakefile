@@ -70,7 +70,10 @@
   (sleep 1)
   (echo "c"))
 
-
 (task "build" ()
       (sh "rm -f bin/lake")
       (sh "qlot exec ros run -L sbcl -e '(ql:quickload :deploy)' -e '(progn (setf deploy:*status-output* nil) (asdf:make :lake-bin))'"))
+
+(task update-formula ()
+      "Updates Homebrew's formula in lake.rb"
+      (sh "qlot exec cl-brewer lake"))
