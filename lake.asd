@@ -13,13 +13,10 @@
   :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
-  :depends-on (:alexandria
-               :lparallel
-               :split-sequence
-               :cl-syntax-interpol)
-  :components ((:module "src"
-                :components
-                ((:file "lake"))))
+  :class :package-inferred-system
+  :pathname "src"
+  :depends-on ("cl-syntax-interpol"
+               "lake/core")
   :description "Lake is a GNU make like build utility in Common Lisp."
   :long-description
   #.(with-open-file (stream (merge-pathnames

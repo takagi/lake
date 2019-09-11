@@ -1,43 +1,44 @@
-(in-package :cl-user)
 (defpackage lake
   (:use :cl)
-  (:export :lake
-           :display-tasks
-           :execute
-           :namespace
-           :task
-           :file
-           :directory
-           :echo
-           :sh
-           :*ssh-host*
-           :*ssh-user*
-           :*ssh-identity*
-           :ssh
-           :scp
-           :getenv
-           :*path*)
-  (:shadow :directory)
-  (:import-from :alexandria
-                :ensure-list
-                :once-only)
-  (:import-from :split-sequence
-                :split-sequence)
-  (:import-from :uiop
-                :getcwd
-                :file-exists-p
-                :run-program)
+  (:nicknames #:lake/core)
+  (:export #:lake
+           #:display-tasks
+           #:execute
+           #:namespace
+           #:task
+           #:file
+           #:directory
+           #:echo
+           #:sh
+           #:*ssh-host*
+           #:*ssh-user*
+           #:*ssh-identity*
+           #:ssh
+           #:scp
+           #:getenv
+           #:*path*)
+  (:shadow #:directory)
+  (:import-from #:cl-ppcre)
+  (:import-from #:alexandria
+                #:ensure-list
+                #:once-only)
+  (:import-from #:split-sequence
+                #:split-sequence)
+  (:import-from #:uiop
+                #:getcwd
+                #:file-exists-p
+                #:run-program)
   #+thread-support
-  (:import-from :lparallel
-                :*kernel*
-                :make-kernel
-                :make-ptree
-                :ptree-fn
-                :call-ptree
-                :task-handler-bind
-                :ptree-undefined-function-error
-                :invoke-transfer-error))
-(in-package :lake)
+  (:import-from #:lparallel
+                #:*kernel*
+                #:make-kernel
+                #:make-ptree
+                #:ptree-fn
+                #:call-ptree
+                #:task-handler-bind
+                #:ptree-undefined-function-error
+                #:invoke-transfer-error))
+(in-package lake)
 
 
 ;;
