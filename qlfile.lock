@@ -1,0 +1,4 @@
+("quicklisp" .
+ (:class qlot.source.ql:source-ql-all
+  :initargs (:distribution "http://beta.quicklisp.org/dist/quicklisp.txt" :%version :latest)
+  :version "2019-08-13"))
