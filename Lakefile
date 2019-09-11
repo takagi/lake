@@ -69,3 +69,8 @@
 (task "c" ()
   (sleep 1)
   (echo "c"))
+
+
+(task update-formula ()
+      "Updates Homebrew's formula in lake.rb"
+      (sh "qlot exec cl-brewer lake"))
