@@ -32,10 +32,10 @@
                     (setf j-mode nil))
             ((string= "-f" arg) (setf f-mode t))
             ((string= "-h" arg) (print-help)
-             (ros:quit 1))
+             (uiop:quit 1))
             ((string= "-j" arg) (setf j-mode t))
             ((string= "-T" arg) (print-tasks pathname)
-             (ros:quit 1))
+             (uiop:quit 1))
             ((string= "-v" arg) (setf v-mode t))
             (t (push arg targets))))
     (let ((params `(:verbose ,v-mode
