@@ -1,6 +1,6 @@
 (defpackage #:lake/main
   (:use #:cl)
-  (:import-from #:lake)
+  (:import-from #:lake/core)
   (:export #:main
            #:uiop-main))
 (in-package lake/main)
