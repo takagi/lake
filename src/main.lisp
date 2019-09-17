@@ -50,5 +50,9 @@
 
 
 (defun uiop-main ()
-  (apply 'main
-         (uiop:command-line-arguments)))
+  (handler-bind ((error (lambda (c)
+                          (format *error-output* "~A~%"
+                                  c)
+                          (uiop:quit 1))))
+    (apply 'main
+           (uiop:command-line-arguments))))
