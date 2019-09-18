@@ -1,8 +1,8 @@
 class Lake < Formula
   desc "Lake is a GNU make like build utility in Common Lisp."
   homepage "https://github.com/svetlyak40wt/lake"
-  url "https://github.com/svetlyak40wt/lake/archive/v0.1.2.tar.gz"
-  sha256 "656f12b27a3cbff6867c8dfd36d3173be5c9e310395963d17cf0a0e23f3044fa"
+  url "https://github.com/svetlyak40wt/lake/archive/v0.1.3.tar.gz"
+  sha256 "bdefa5ab5d598707b59eec72d2d6123446d4061e41be71748f87053a7fd0ed12"
   head NIL
 
   depends_on "sbcl"
@@ -12,89 +12,89 @@ class Lake < Formula
     sha256 "e0642bd6f8af8eb71e3359b45e11a135fa3c9a511492bc9dbbcd10ec7d694704"
   end
 
-  resource "babel" do
-    url "http://beta.quicklisp.org/archive/babel/2017-12-27/babel-20171227-git.tgz"
-    sha256 "2e0b1e1513d2cf61f23f38f4d2b5fec23efecf88cb72b68aff7d07559334de98"
-  end
-
-  resource "bordeaux-threads" do
-    url "http://beta.quicklisp.org/archive/bordeaux-threads/2018-07-11/bordeaux-threads-v0.8.6.tgz"
-    sha256 "3ee42f65c46801d9277f37ce2253531164c40ead7fe7b255344f80ef574b6be0"
-  end
-
   resource "cffi" do
     url "http://beta.quicklisp.org/archive/cffi/2019-07-10/cffi_0.20.1.tgz"
     sha256 "6a427cc08f0418900bae8a76a690bb1c51fd61caf7efcb677d31701e0ce3ec5e"
   end
 
-  resource "cl-interpol" do
-    url "http://beta.quicklisp.org/archive/cl-interpol/2018-07-11/cl-interpol-20180711-git.tgz"
-    sha256 "196895b193f955488e51e2f69c2afca8adb9beeca0e2cdfc80c9a7c866a908e9"
+  resource "cl-babel-babel" do
+    url "http://dist.ultralisp.org/ultralisp/archive/c/cl-babel-babel-20190618134909.tgz"
+    sha256 "db6c1b6e21e95519dc5626cd0ab041d2036062178f021da68214b6cd1f00ee0a"
   end
 
-  resource "cl-ppcre" do
-    url "http://beta.quicklisp.org/archive/cl-ppcre/2019-05-21/cl-ppcre-20190521-git.tgz"
-    sha256 "1d4b08ea962612ba92cec7c6f5bb0b8e82efddb91affa0007ada3a95dc66d25c"
+  resource "edicl-cl-interpol" do
+    url "http://dist.ultralisp.org/ultralisp/archive/e/edicl-cl-interpol-20190618141007.tgz"
+    sha256 "28e3739133908fea3a4fa76aaaeb773d9bcacbdd9fd3aeda20577e08e3efb6d0"
   end
 
-  resource "cl-syntax" do
-    url "http://beta.quicklisp.org/archive/cl-syntax/2015-04-07/cl-syntax-20150407-git.tgz"
-    sha256 "166d32aaf0ed2a218926a1b757abb5c0edbac6fa493f5cba1a89501ce151e9df"
+  resource "edicl-cl-ppcre" do
+    url "http://dist.ultralisp.org/ultralisp/archive/e/edicl-cl-ppcre-20190618135807.tgz"
+    sha256 "abddf50018b7d4593e962e6920e74cc5a08015bca29d8c79fc378466a30aa716"
   end
 
-  resource "cl-unicode" do
-    url "http://beta.quicklisp.org/archive/cl-unicode/2019-05-21/cl-unicode-20190521-git.tgz"
-    sha256 "ecd90df05f53cec0a33eb504b9d3af0356832ad84cc0ddb3d5dc0dbb70f6405c"
+  resource "edicl-cl-unicode" do
+    url "http://dist.ultralisp.org/ultralisp/archive/e/edicl-cl-unicode-20190618142709.tgz"
+    sha256 "56a1c24e7a62c0f47da8cb4e62370ef480596cfdc42d8176fddf15cde040f9c3"
   end
 
-  resource "deploy" do
-    url "http://beta.quicklisp.org/archive/deploy/2019-05-21/deploy-20190521-git.tgz"
-    sha256 "0ccf94ce9826488c2dea584ccc49d8143c5b0485135c54df39f7490cf0cf3d8b"
+  resource "edicl-flexi-streams" do
+    url "http://dist.ultralisp.org/ultralisp/archive/e/edicl-flexi-streams-20190618143408.tgz"
+    sha256 "7c5bf9b5106da9137b7a85d859a32eaf37c9b5f53f8d906ca4be6422bb6531e8"
   end
 
-  resource "documentation-utils" do
-    url "http://beta.quicklisp.org/archive/documentation-utils/2019-07-10/documentation-utils-20190710-git.tgz"
-    sha256 "433e4ee61d533797a5426310bd9a49de944d747a0532f3f49552cc72b8467fd8"
+  resource "lmj-lparallel" do
+    url "http://dist.ultralisp.org/ultralisp/archive/l/lmj-lparallel-20190319125038.tgz"
+    sha256 "504d05c7b7b3c51d72d936dc00667184b21909e644e874a4e748a91017b13c11"
   end
 
-  resource "flexi-streams" do
-    url "http://beta.quicklisp.org/archive/flexi-streams/2019-01-07/flexi-streams-20190107-git.tgz"
-    sha256 "259a64ec4f19da7abf64296864a4019daf53c330d1dc9945cefb377df59e13bb"
+  resource "m2ym-cl-syntax" do
+    url "http://dist.ultralisp.org/ultralisp/archive/m/m2ym-cl-syntax-20190319100142.tgz"
+    sha256 "555a992d9264633ce4b0eac2df5746148a446dfe411b0532c9f55fe8036f285d"
   end
 
-  resource "lparallel" do
-    url "http://beta.quicklisp.org/archive/lparallel/2016-08-25/lparallel-20160825-git.tgz"
-    sha256 "213bc89e6bbabe07fc3bcb21be1021b31f6f2ab1b7a2abb358a01ab9bee69c73"
+  resource "m2ym-trivial-types" do
+    url "http://dist.ultralisp.org/ultralisp/archive/m/m2ym-trivial-types-20190318184855.tgz"
+    sha256 "0b05aab17b8ef14d7576ac554a2ee30e52d848e7c95dcd0c27d7a357c3110351"
   end
 
-  resource "named-readtables" do
-    url "http://beta.quicklisp.org/archive/named-readtables/2018-01-31/named-readtables-20180131-git.tgz"
-    sha256 "e5bdcc3f0ef9265785baebbfd5f1c8f41f7a12e8b5dfab8cafa69683457d1eba"
+  resource "melisgl-named-readtables" do
+    url "http://dist.ultralisp.org/ultralisp/archive/m/melisgl-named-readtables-20190319063736.tgz"
+    sha256 "08a09925f6f73a582834d0516bef81fa1872dd2ec8febb0db26f84038531592c"
   end
 
-  resource "split-sequence" do
-    url "http://beta.quicklisp.org/archive/split-sequence/2019-05-21/split-sequence-v2.0.0.tgz"
-    sha256 "6aa973591b2ba75a07774638f4702cdf329c2aa668e3f7e9866a06fab9ae9525"
+  resource "sharplispers-split-sequence" do
+    url "http://dist.ultralisp.org/ultralisp/archive/s/sharplispers-split-sequence-20190517073140.tgz"
+    sha256 "1b0bc2fb49ec66b845c2a85a0dcf6f675c8cd0b7d283de1822401ef58df944a5"
   end
 
-  resource "trivial-features" do
-    url "http://beta.quicklisp.org/archive/trivial-features/2019-07-10/trivial-features-20190710-git.tgz"
-    sha256 "be8d97a31a383e1d3c69b87766f3c318f946519d2dc0f80df1fc221921dc2212"
+  resource "Shinmera-deploy" do
+    url "http://dist.ultralisp.org/ultralisp/archive/S/Shinmera-deploy-20190911151713.tgz"
+    sha256 "2d2d14412142ef3527a023cae53ffd3d802d9412150113105c83085075992eb0"
   end
 
-  resource "trivial-gray-streams" do
-    url "http://beta.quicklisp.org/archive/trivial-gray-streams/2018-10-18/trivial-gray-streams-20181018-git.tgz"
-    sha256 "3b921381df112515661c174fafa04adf11cf4620ebd7e2cc1d7bfd548fab2d28"
+  resource "Shinmera-documentation-utils" do
+    url "http://dist.ultralisp.org/ultralisp/archive/S/Shinmera-documentation-utils-20190627101653.tgz"
+    sha256 "f2a238459c2a91032af093487e8237b38c321eae2c656c23558b711f6bc90815"
   end
 
-  resource "trivial-indent" do
-    url "http://beta.quicklisp.org/archive/trivial-indent/2019-07-10/trivial-indent-20190710-git.tgz"
-    sha256 "9d79c506d5c12a3916e7d646f355b7bba2a342cf97974203e33b06c7902c4303"
+  resource "Shinmera-trivial-indent" do
+    url "http://dist.ultralisp.org/ultralisp/archive/S/Shinmera-trivial-indent-20190819223127.tgz"
+    sha256 "40aa939f547d28a6df1f815814ba4943428e5cbff288ffc4fb67f4a883c328ad"
   end
 
-  resource "trivial-types" do
-    url "http://beta.quicklisp.org/archive/trivial-types/2012-04-07/trivial-types-20120407-git.tgz"
-    sha256 "bdaf0e7174a1be45c8b13854361dcb5967fcb90ab37eae3913178bb8d7727478"
+  resource "sionescu-bordeaux-threads" do
+    url "http://dist.ultralisp.org/ultralisp/archive/s/sionescu-bordeaux-threads-20190618135307.tgz"
+    sha256 "ca77a1ccc7eecf8927484b8cf8061efc8ecda3d26ef94c6579ef2be8d0d437a6"
+  end
+
+  resource "trivial-features-trivial-features" do
+    url "http://dist.ultralisp.org/ultralisp/archive/t/trivial-features-trivial-features-20190709040636.tgz"
+    sha256 "438ff741c756902c5878565201ad703ab775ce76ac8a085c4149e6ccc3e19060"
+  end
+
+  resource "trivial-gray-streams-trivial-gray-streams" do
+    url "http://dist.ultralisp.org/ultralisp/archive/t/trivial-gray-streams-trivial-gray-streams-20190319050358.tgz"
+    sha256 "6f85c53751a6c39897907582673b33ab25f2b2703f3b041f972cf1dfa4b8b596"
   end
 
   resource "uiop" do
@@ -110,7 +110,7 @@ class Lake < Formula
     ENV["CL_SOURCE_REGISTRY"] = "#{buildpath}/lib//:#{buildpath}//"
     ENV["ASDF_OUTPUT_TRANSLATIONS"] = "/:/"
 
-    system "sbcl", "--eval", "(require :asdf)", "--eval", "(asdf:load-system :deploy)", "--eval", "(handler-case ((setf deploy:*status-output* nil) (asdf:make :lake)) (error () (uiop:quit 1)))"
-    bin.install Dir["src/bin/*"]
+    system "sbcl", "--eval", "(require :asdf)", "--eval", "(asdf:load-system :deploy)", "--eval", "(handler-case (progn (setf deploy:*status-output* nil) (asdf:make :lake)) (error () (uiop:quit 1)))"
+    bin.install Dir["bin/*"]
   end
 end

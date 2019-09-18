@@ -12,8 +12,7 @@
   :version "0.1.3"
   :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
-  ;; :homepage "https://github.com/takagi/lake"
-  :homepage "https://github.com/svetlyak40wt/lake"
+  :homepage "https://github.com/takagi/lake"
   :class :package-inferred-system
   :pathname "src"
   :depends-on ("cl-syntax-interpol"
