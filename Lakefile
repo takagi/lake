@@ -52,7 +52,7 @@
 
 (task "home" ()
   ;; Use environment variable via roswell.
-  (echo (ros:getenv "HOME")))
+  (echo (uiop:getenv "HOME")))
 
 ;; For simultaneous execution.
 (task "multi" ("a" "b" "c")

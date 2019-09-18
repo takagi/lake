@@ -9,7 +9,7 @@
 (in-package :lake-asd)
 
 (defsystem "lake"
-  :version "0.1.2"
+  :version "0.1.3"
   :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   ;; :homepage "https://github.com/takagi/lake"
