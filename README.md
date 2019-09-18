@@ -45,11 +45,19 @@ Further detail, please see [Lakefile](#Lakefile) section and [API](#API) section
 
 ## Install
 
-You can install lake via Quicklisp,
+### On OSX
+
+
+    brew tap takagi/lake https://github.com/takagi/lake
+    brew install lake
+
+### Via Quicklisp
 
     (ql:quickload :lake)
 
-or you can also install it using Roswell including `lake` command. Ensure that `PATH` environment variable contains `~/.roswell/bin`.
+### Using Roswell
+
+Also you can install it using Roswell including `lake` command. Ensure that `PATH` environment variable contains `~/.roswell/bin`.
 
     $ ros install lake
     $ which lake
