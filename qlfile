@@ -1,0 +1,4 @@
+dist ul http://dist.ultralisp.org
+
+ql :all :latest
+ul :all :latest

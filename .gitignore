@@ -9,3 +9,6 @@
 .#*
 */#*#
 docs/
+/bin/
+/quicklisp/
+/.qlot/

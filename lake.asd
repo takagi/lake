@@ -8,19 +8,20 @@
   (:use :cl :asdf))
 (in-package :lake-asd)
 
-(defsystem lake
-  :version "0.1"
+(defsystem "lake"
+  :version "0.1.3"
   :author "Rudolph Miller and Masayuki Takagi"
   :license "MIT"
   :homepage "https://github.com/takagi/lake"
-  :depends-on (:alexandria
-               :lparallel
-               :split-sequence
-               :cl-syntax-interpol)
-  :components ((:module "src"
-                :components
-                ((:file "lake"))))
+  :class :package-inferred-system
+  :pathname "src"
+  :depends-on ("cl-syntax-interpol"
+               "lake/main")
   :description "Lake is a GNU make like build utility in Common Lisp."
+  :defsystem-depends-on (:deploy)
+  :build-operation "deploy-op"
+  :build-pathname "lake"
+  :entry-point "lake/main:uiop-main"
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.md"
