@@ -11,9 +11,6 @@ Make is, originally, a program to build executable files to compile multiple sou
 
 In lake, you use `Lakefile` instead of `Makefile` or `Rakefile`.
 
-    (use-package '(:lake :cl-syntax))
-    (use-syntax :interpol)
-
     ;; Tasks that build an executable with dependency.
     (defparameter cc (getenv "CC" "gcc"))
 

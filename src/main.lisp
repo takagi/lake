@@ -23,10 +23,10 @@
 
 (defun main (&rest argv)
   (declare (ignorable argv))
-  (let (targets pathname jobs f-mode j-mode v-mode)
+  (let (targets filename jobs f-mode j-mode v-mode)
     (loop for arg in argv
        do (cond
-            (f-mode (setf pathname arg)
+            (f-mode (setf filename arg)
                     (setf f-mode nil))
             (j-mode (setf jobs (parse-integer arg))
                     (setf j-mode nil))
@@ -34,15 +34,15 @@
             ((string= "-h" arg) (print-help)
              (uiop:quit 1))
             ((string= "-j" arg) (setf j-mode t))
-            ((string= "-T" arg) (print-tasks pathname)
+            ((string= "-T" arg) (print-tasks filename)
              (uiop:quit 1))
             ((string= "-v" arg) (setf v-mode t))
             (t (push arg targets))))
     (let ((params `(:verbose ,v-mode
                              ,@(when jobs
                                  `(:jobs ,jobs))
-                             ,@(when pathname
-                                 `(:pathname ,pathname)))))
+                             ,@(when filename
+                                 `(:filename ,filename)))))
       (if targets
           (loop for target in (nreverse targets)
              do (apply #'lake:lake :target target params))

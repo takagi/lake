@@ -653,31 +653,85 @@
        append (list task-arg arg))))
 
 (defun run-task (target tasks &optional (jobs 1))
-  (multiple-value-bind (name args) (parse-target target)
-    (let ((plist (construct-plist name args tasks)))
-      (%run-task name tasks plist jobs))))
+  (let* ((*package* (find-package :lake/user)))
+    (multiple-value-bind (name args) (parse-target target)
+      (let ((plist (construct-plist name args tasks)))
+        (%run-task name tasks plist jobs)))))
 
 (defun execute (name)
   (let ((name1 (resolve-dependency-task-name name *context-namespace*)))
     (%run-task name1 *context-tasks* *context-plist* *context-jobs*)))
 
 
+(defun prompt (message &key allowed-answers)
+  (format *query-io* "~A~%" message)
+  (finish-output *query-io*)
+  (let ((answer (read-line *query-io*)))
+    (cond
+      ((and allowed-answers
+            (not (member answer allowed-answers
+                         :test #'string=)))
+       (format *query-io*
+               "Answer should be ~{~A~#[~; or ~:;, ~]~}~2%"
+               allowed-answers)
+       (prompt message :allowed-answers allowed-answers))
+      (t answer))))
+
 ;;
 ;; Lake
 
-(defun get-lakefile-pathname ()
-  (or (probe-file (merge-pathnames "Lakefile" (getcwd)))
-      (error "No Lakefile found at ~A." (getcwd))))
+(defparameter +lakefile-template+
+  '((task "greet" ()
+      (sh "echo \"Hello world!\""))
+    (task "default" ("greet")
+      (echo "This was default task."))))
+
+(defun initialize-lakefile (path)
+  (with-open-file (out path
+                       :direction :output
+                       :if-exists :error
+                       :if-does-not-exist :create)
+    (write-line "#|-*- mode:lisp -*-|#" out)
+    (loop for form in +lakefile-template+
+          do (format out "~%")
+             (write form
+                    :stream out
+                    :pretty t
+                    :case :downcase)
+             (format out "~%"))))
+
+(defun get-lakefile-pathname (&optional (name "Lakefile"))
+  (let* ((path (merge-pathnames name (getcwd)))
+         (probed-path (probe-file path)))
+    (cond
+      (probed-path probed-path)
+      (t (format *query-io*
+                 "~A not found at ~A.~%"
+                 name
+                 (getcwd))
+         (let ((response (prompt "Do you want to create it? [yes/no]"
+                                 :allowed-answers '("yes" "no"))))
+           (cond
+             ((string= response
+                       "yes")
+              (initialize-lakefile path)
+              (error "~A was created. Now edit it and run lake again."
+                     path))
+             (t (error "You need to create a ~A"
+                       path))))))))
 
 (defun load-lakefile (pathname)
-  (load pathname))
+  (let* ((*package* (find-package :lake/user)))
+    (cl-syntax:use-syntax :interpol)
+    (load pathname)))
 
 (defun lake (&key (target "default")
-                  (pathname (get-lakefile-pathname))
+                  (filename "Lakefile")
                   (jobs 1)
                   (verbose nil))
   (let ((*verbose* verbose)
-        (*tasks* nil))
+        (*tasks* nil)
+        (pathname (get-lakefile-pathname filename)))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile.
