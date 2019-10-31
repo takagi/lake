@@ -692,7 +692,14 @@
                        :if-exists :error
                        :if-does-not-exist :create)
     (write-line "#|-*- mode:lisp -*-|#" out)
-    (loop for form in +lakefile-template+
+    (loop with *package* = (find-package :lake/user)
+          with *print-pprint-dispatch* = (copy-pprint-dispatch)
+          ;; We need this trick to make it print `nil' as '()
+            initially (set-pprint-dispatch 'null
+                                           (lambda (stream obj)
+                                             (declare (ignorable obj))
+                                             (write-string "()" stream)))
+          for form in +lakefile-template+
           do (format out "~%")
              (write form
                     :stream out
