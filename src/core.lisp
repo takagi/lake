@@ -280,6 +280,8 @@
 
 (defvar *tasks* nil)
 
+(defvar *current-lakefile* nil)
+
 (defvar *namespace* nil)
 
 (defmacro namespace (namespace &body body)
@@ -738,11 +740,11 @@
                   (verbose nil))
   (let ((*verbose* verbose)
         (*tasks* nil)
-        (pathname (get-lakefile-pathname filename)))
+        (*current-lakefile* (get-lakefile-pathname filename)))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile.
-    (load-lakefile pathname)
+    (load-lakefile *current-lakefile*)
     ;; Execute target task.
     (run-task target *tasks* jobs)))
 
@@ -754,19 +756,22 @@
 (defun %display-tasks (tasks)
   (let ((width (tasks-max-width tasks)))
     (loop for task in tasks
-       when (task-description task)
-       do (let ((padlen (- width (length (task-name task)))))
-            (format t "lake ~A~v@{ ~}  # ~A~%"
-                    (task-name task)
-                    padlen
-                    (task-description task))))))
+          for description = (or (task-description task)
+                                "No description.")
+          do (let ((padlen (- width (length (task-name task)))))
+               (format t "lake ~A~v@{ ~}  # ~A~%"
+                       (task-name task)
+                       padlen
+                       description)))))
 
-(defun display-tasks (&key (pathname (get-lakefile-pathname))
+(defun display-tasks (&key (pathname (or *current-lakefile*
+                                         (get-lakefile-pathname)))
                            (verbose nil))
   (let ((*verbose* verbose))
     ;; Show message if verbose.
     (verbose (format nil "Current directory: ~A~%" (getcwd)))
     ;; Load Lakefile to display tasks.
     (let ((*tasks*))
+      (verbose (format nil "Showing tasks from ~A~%" pathname))
       (load-lakefile pathname)
       (%display-tasks (reverse *tasks*)))))
