@@ -7,13 +7,15 @@
 
 
 (defun print-help ()
-  (write-line "Usage: lake [options] [target] ...")
-  (write-line "Options:")
-  (write-line "  -f FILE       Use FILE as a lakefile.")
-  (write-line "  -h            Print this message and exit.")
-  (write-line "  -j INTEGER    Execute multiple tasks simultaneously.")
-  (write-line "  -T            Display the tasks with descriptions, then exit.")
-  (write-line "  -v            Verbose mode."))
+  (mapc #'write-line
+        '("Usage: lake [options] [target] ..."
+          "Options:"
+          "  --file, -f FILE  Use FILE as a lakefile."
+          "  --help, -h       Print this message and exit."
+          "  -j INTEGER       Execute multiple tasks simultaneously."
+          "  --list, -T       Display the tasks with descriptions, then exit."
+          "  -v               Verbose mode.")))
+
 
 (defun print-tasks (pathname)
   (if pathname
@@ -30,11 +32,17 @@
                     (setf f-mode nil))
             (j-mode (setf jobs (parse-integer arg))
                     (setf j-mode nil))
-            ((string= "-f" arg) (setf f-mode t))
-            ((string= "-h" arg) (print-help)
+            ((or (string= "-f" arg)
+                 (string= "--file" arg))
+             (setf f-mode t))
+            ((or (string= "-h" arg)
+                 (string= "--help" arg))
+             (print-help)
              (uiop:quit 1))
             ((string= "-j" arg) (setf j-mode t))
-            ((string= "-T" arg) (print-tasks filename)
+            ((or (string= "-T;" arg)
+                 (string= "--list" arg))
+             (print-tasks filename)
              (uiop:quit 1))
             ((string= "-v" arg) (setf v-mode t))
             (t (push arg targets))))
