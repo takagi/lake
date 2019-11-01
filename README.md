@@ -304,7 +304,8 @@ Displays the tasks with descriptions in a Lakefile specified with `pathname`. No
 
 ### lake
 
-Lake provides its command line interface as a roswell script.
+Lake provides its command line interface as a roswell script or a
+binary, if built with the Homebrew.
 
     SYNOPSIS
 
@@ -312,15 +313,15 @@ Lake provides its command line interface as a roswell script.
 
     OPTIONS
 
-        -f FILE
+        -f, --file FILE
             Use FILE as a Lakefile.
-        -h
+        -h, --help
             Print usage.
         -j INTEGER
             Execute multiple tasks simultaneously.
-        -T
+        -T, --list
             Display the tasks with descriptions, then exit.
-        -v
+        -v, --verbose
             Verbose mode.
 
     EXAMPLE
