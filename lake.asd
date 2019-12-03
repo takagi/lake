@@ -16,7 +16,8 @@
   :class :package-inferred-system
   :pathname "src"
   :depends-on ("cl-syntax-interpol"
-               "lake/main")
+               "lake/main"
+               "lake/user")
   :description "Lake is a GNU make like build utility in Common Lisp."
   :defsystem-depends-on (:deploy)
   :build-operation "deploy-op"
