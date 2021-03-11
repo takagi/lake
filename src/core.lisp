@@ -19,6 +19,7 @@
            #:*path*)
   (:shadow #:directory)
   (:import-from #:cl-ppcre)
+  (:import-from #:cl-syntax)
   (:import-from #:alexandria
                 #:ensure-list
                 #:once-only)
