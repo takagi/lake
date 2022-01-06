@@ -19,10 +19,6 @@
                "lake/main"
                "lake/user")
   :description "Lake is a GNU make like build utility in Common Lisp."
-  ;; :defsystem-depends-on (:deploy)
-  ;; :build-operation "deploy-op"
-  ;; :build-pathname "lake"
-  :entry-point "lake/main:uiop-main"
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.md"
